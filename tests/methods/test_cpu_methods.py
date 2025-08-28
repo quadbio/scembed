@@ -10,9 +10,9 @@ class TestPrecomputedEmbeddingMethod:
     """Test suite for PrecomputedEmbeddingMethod."""
 
     @pytest.mark.parametrize("embedding_key", ["X_pca"])
-    def test_precomputed_embedding_method(self, lung_data_mini, embedding_key):
+    def test_precomputed_embedding_method(self, pbmc_data, embedding_key):
         """Test precomputed embedding method with different embedding keys."""
-        method = PrecomputedEmbeddingMethod(lung_data_mini, embedding_key=embedding_key)
+        method = PrecomputedEmbeddingMethod(pbmc_data, embedding_key=embedding_key)
 
         assert method.embedding_key == embedding_key
         assert method.source_embedding_key == embedding_key
@@ -40,11 +40,11 @@ class TestLIGERMethod:
             (8, 10.0, 8),  # Reduced iterations
         ],
     )
-    def test_liger_method(self, lung_data_mini, k, value_lambda, max_iters):
+    def test_liger_method(self, pbmc_data, k, value_lambda, max_iters):
         """Test LIGER method with different parameter combinations."""
         pytest.importorskip("pyliger")
 
-        method = LIGERMethod(lung_data_mini, k=k, value_lambda=value_lambda, max_iters=max_iters)
+        method = LIGERMethod(pbmc_data, k=k, value_lambda=value_lambda, max_iters=max_iters)
 
         assert method.k == k
         assert method.value_lambda == value_lambda
@@ -71,9 +71,9 @@ class TestHVGMethod:
             (300, "cell_ranger", False),  # Reduced from 500
         ],
     )
-    def test_hvg_method(self, lung_data_mini, n_top_genes, flavor, scale):
+    def test_hvg_method(self, pbmc_data, n_top_genes, flavor, scale):
         """Test HVG method with different parameter combinations."""
-        method = HVGMethod(lung_data_mini, n_top_genes=n_top_genes, flavor=flavor, scale=scale)
+        method = HVGMethod(pbmc_data, n_top_genes=n_top_genes, flavor=flavor, scale=scale)
 
         assert method.n_top_genes == n_top_genes
         assert method.flavor == flavor
@@ -88,7 +88,7 @@ class TestHVGMethod:
         # After HVG selection, should have at most n_top_genes features
         assert method.adata.obsm[method.embedding_key].shape[1] <= n_top_genes
         # Should have exactly n_top_genes after selection (unless fewer genes available)
-        expected_genes = min(n_top_genes, lung_data_mini.n_vars)
+        expected_genes = min(n_top_genes, pbmc_data.n_vars)
         assert method.adata.obsm[method.embedding_key].shape[1] == expected_genes
 
 
@@ -103,11 +103,11 @@ class TestScanoramaMethod:
             (15, 0.05, 20.0),  # Reduced from 30
         ],
     )
-    def test_scanorama_method(self, lung_data_mini, knn, alpha, sigma):
+    def test_scanorama_method(self, pbmc_data, knn, alpha, sigma):
         """Test Scanorama method with different parameter combinations."""
         pytest.importorskip("scanorama")
 
-        method = ScanoramaMethod(lung_data_mini, knn=knn, alpha=alpha, sigma=sigma)
+        method = ScanoramaMethod(pbmc_data, knn=knn, alpha=alpha, sigma=sigma)
 
         assert method.knn == knn
         assert method.alpha == alpha
@@ -119,5 +119,7 @@ class TestScanoramaMethod:
         assert method.is_fitted
         assert method.embedding_key in method.adata.obsm
         assert method.adata.obsm[method.embedding_key].shape[0] == method.adata.n_obs
+        # Scanorama typically produces embeddings with same dimensionality as input or reduced
+        assert method.adata.obsm[method.embedding_key].shape[1] > 0
         # Scanorama typically produces embeddings with same dimensionality as input or reduced
         assert method.adata.obsm[method.embedding_key].shape[1] > 0

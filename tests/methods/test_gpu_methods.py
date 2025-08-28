@@ -16,11 +16,11 @@ class TestHarmonyMethod:
     """Test suite for HarmonyMethod."""
 
     @pytest.mark.parametrize("theta", [None, 2.0, 5.0])
-    def test_harmony_method(self, lung_data_mini, theta):
+    def test_harmony_method(self, pbmc_data, theta):
         """Test Harmony method with different theta values."""
         pytest.importorskip("harmony")
 
-        method = HarmonyMethod(lung_data_mini, theta=theta)
+        method = HarmonyMethod(pbmc_data, theta=theta)
 
         assert method.theta == theta
         assert not method.is_fitted
@@ -31,7 +31,7 @@ class TestHarmonyMethod:
         assert method.embedding_key in method.adata.obsm
         assert method.adata.obsm[method.embedding_key].shape[0] == method.adata.n_obs
         # Harmony should preserve dimensionality from PCA
-        assert method.adata.obsm[method.embedding_key].shape[1] == lung_data_mini.obsm["X_pca"].shape[1]
+        assert method.adata.obsm[method.embedding_key].shape[1] == pbmc_data.obsm["X_pca"].shape[1]
 
 
 class TestscVIMethod:
@@ -45,11 +45,11 @@ class TestscVIMethod:
             (8, 128),
         ],
     )
-    def test_scvi_method(self, lung_data_mini, n_latent, n_hidden):
+    def test_scvi_method(self, pbmc_data, n_latent, n_hidden):
         """Test scVI method with different latent and hidden dimensions."""
         pytest.importorskip("scvi")
 
-        method = scVIMethod(lung_data_mini, n_latent=n_latent, n_hidden=n_hidden, max_epochs=5)
+        method = scVIMethod(pbmc_data, n_latent=n_latent, n_hidden=n_hidden, max_epochs=5)
 
         assert method.n_latent == n_latent
         assert method.n_hidden == n_hidden
@@ -76,12 +76,12 @@ class TestscANVIMethod:
             None,
         ],
     )
-    def test_scanvi_method(self, lung_data_mini, linear_classifier):
+    def test_scanvi_method(self, pbmc_data, linear_classifier):
         """Test scANVI method with different linear classifier settings."""
         pytest.importorskip("scvi")
 
         method = scANVIMethod(
-            lung_data_mini,
+            pbmc_data,
             linear_classifier=linear_classifier,
             max_epochs=5,
             scvi_params={"max_epochs": 5},  # Reduce scVI pretraining epochs too
@@ -111,12 +111,12 @@ class TestscPoliMethod:
             (8, 1),
         ],
     )
-    def test_scpoli_method(self, lung_data_mini, latent_dim, pretraining_epochs):
+    def test_scpoli_method(self, pbmc_data, latent_dim, pretraining_epochs):
         """Test scPoli method with different latent dimensions and pretraining epochs."""
         pytest.importorskip("scarches")
 
         method = scPoliMethod(
-            lung_data_mini,
+            pbmc_data,
             latent_dim=latent_dim,
             pretraining_epochs=pretraining_epochs,
             n_epochs=5,
@@ -147,14 +147,14 @@ class TestResolVIMethod:
             (8, 8),  # Changed from 5 to 8 to avoid neighbor indexing issues
         ],
     )
-    def test_resolvi_method(self, spatial_data_mini, n_latent, n_neighbors):
+    def test_resolvi_method(self, spatial_data, n_latent, n_neighbors):
         """Test ResolVI method with different latent dimensions and neighbor counts."""
         pytest.importorskip("scvi")
 
         method = ResolVIMethod(
-            spatial_data_mini,
-            batch_key="embryo",
-            cell_type_key="celltype_harmonized",
+            spatial_data,
+            batch_key="batch",
+            cell_type_key="cell_type",
             spatial_key="spatial",
             n_latent=n_latent,
             n_neighbors=n_neighbors,
@@ -187,14 +187,14 @@ class TestscVIVAMethod:
             ("scvi", 5),
         ],
     )
-    def test_scviva_method(self, spatial_data_mini, embedding_method, k_nn):
+    def test_scviva_method(self, spatial_data, embedding_method, k_nn):
         """Test scVIVA method with different embedding methods and neighbor counts."""
         pytest.importorskip("scvi")
 
         method = scVIVAMethod(
-            spatial_data_mini,
-            batch_key="embryo",
-            cell_type_key="celltype_harmonized",
+            spatial_data,
+            batch_key="batch",
+            cell_type_key="cell_type",
             spatial_key="spatial",
             embedding_method=embedding_method,
             k_nn=k_nn,
