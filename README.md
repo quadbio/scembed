@@ -2,9 +2,21 @@
 
 [![Tests][badge-tests]][tests]
 [![Documentation][badge-docs]][documentation]
+[![Coverage][badge-coverage]][coverage]
+[![Pre-commit.ci][badge-pre-commit]][pre-commit]
+[![PyPI][badge-pypi]][pypi]
+[![Downloads][badge-downloads]][downloads]
+[![Zenodo][badge-zenodo]][zenodo]
+
 
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/quadbio/scembed/test.yaml?branch=main
 [badge-docs]: https://img.shields.io/readthedocs/scembed
+[badge-coverage]: https://codecov.io/gh/quadbio/scembed/branch/main/graph/badge.svg
+[badge-pre-commit]: https://results.pre-commit.ci/badge/github/quadbio/scembed/main.svg
+[badge-pypi]: https://img.shields.io/pypi/v/scembed.svg
+[badge-downloads]: https://static.pepy.tech/badge/scembed
+[badge-zenodo]: https://zenodo.org/badge/1046168919.svg
+
 
 Single-cell RNA-sequencing (scRNA-seq) measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
 
@@ -46,15 +58,13 @@ If you don't have Python installed, we recommend installing [uv][].
 
 There are several alternative options to install scembed:
 
-<!--
-1) Install the latest release of `scembed` from [PyPI][]:
+1. Install the latest release of `scembed` from [PyPI][]:
 
 ```bash
 pip install scembed
 ```
--->
 
-1. Install the latest development version:
+2. Install the latest development version:
 
 ```bash
 pip install git+https://github.com/quadbio/scembed.git@main
@@ -86,7 +96,7 @@ If you found a bug, please use the [issue tracker][].
 
 ## Citation
 
-> t.b.a
+Please use our [zenodo][] entry to cite this software.
 
 [uv]: https://github.com/astral-sh/uv
 [scverse discourse]: https://discourse.scverse.org/
@@ -96,3 +106,9 @@ If you found a bug, please use the [issue tracker][].
 [changelog]: https://scembed.readthedocs.io/en/latest/changelog.html
 [api documentation]: https://scembed.readthedocs.io/en/latest/api.html
 [pypi]: https://pypi.org/project/scembed
+
+[coverage]: https://codecov.io/gh/quadbio/scembed
+[pre-commit]: https://results.pre-commit.ci/latest/github/quadbio/scembed/main
+[pypi]: https://pypi.org/project/scembed/
+[downloads]: https://pepy.tech/project/scembed
+[zenodo]: 10.5281/zenodo.16982001
