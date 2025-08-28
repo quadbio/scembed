@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning][].
 
 ## [Unreleased]
 
-### Added
+## [v0.1.0]
 
-- Basic tool, preprocessing and plotting functions
+### Added
+- Basic tests for the base class, gpu and cpu-based methods {pr}`2`
+- Set up documentation on readthedocs {pr}`2`
+- Set up precommit.ci
+- Push the package to pypi
