@@ -1,39 +1,37 @@
 # API
 
-## Preprocessing
+## Method wrappers
 
 ```{eval-rst}
-.. module:: scembed.pp
+.. module:: scembed.methods
 .. currentmodule:: scembed
 
 .. autosummary::
     :toctree: generated
 
-    pp.basic_preproc
-    pp.elaborate_example
+    methods.HVGMethod
 ```
 
-## Tools
+## Evaluation and visualization
 
 ```{eval-rst}
-.. module:: scembed.tl
+.. module:: scembed
 .. currentmodule:: scembed
 
 .. autosummary::
     :toctree: generated
 
-    tl.basic_tool
+    IntegrationEvaluator
 ```
 
-## Plotting
+## scIB results retrival and aggregation
 
 ```{eval-rst}
-.. module:: scembed.pl
+.. module:: scembed
 .. currentmodule:: scembed
 
 .. autosummary::
     :toctree: generated
 
-    pl.basic_plot
-    pl.BasicClass
+    scIBAggregator
 ```

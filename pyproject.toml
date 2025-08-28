@@ -13,10 +13,9 @@ maintainers = [
 authors = [
   { name = "Marius Lange" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -24,9 +23,11 @@ classifiers = [
 dynamic = [ "version" ]
 
 dependencies = [
+  "numpy>=2",
   "pyarrow>=21",         # Required for parquet support in pandas
   "scanpy>=1.11.4",
   "scib-metrics>=0.5.6",
+  "scipy>=1.16",         # Ensure compatibility with PyTorch tensors
   "session-info2",
   "wandb",
 ]
@@ -71,13 +72,16 @@ optional-dependencies.gpu = [
   "harmony-pytorch", # GPU-accelerated Harmony
   "scarches>=0.6.1", # for scPoli
   "scvi-tools>=1.3",
+  "torch>=2.8",
 ]
 
 optional-dependencies.test = [
   "coverage",
-  "h5py",     # for testing h5 format
-  "pyarrow",  # for testing parquet format (already in main deps but explicit for tests)
+  "h5py",         # for testing h5 format
+  "pyarrow",      # for testing parquet format (already in main deps but explicit for tests)
   "pytest",
+  "scembed[cpu]", # Include CPU dependencies for testing CPU methods
+  "scembed[gpu]", # Include GPU dependencies for testing GPU methods
 ]
 # https://docs.pypi.org/project_metadata/#project-urls
 urls.Documentation = "https://scembed.readthedocs.io/"
@@ -100,7 +104,7 @@ scripts.clean = "git clean -fdX -- {args:docs}"
 # Test the lowest and highest supported Python versions with normal deps
 [[tool.hatch.envs.hatch-test.matrix]]
 deps = [ "stable" ]
-python = [ "3.10", "3.13" ]
+python = [ "3.11", "3.13" ]
 
 # Test the newest supported Python version also with pre-release deps
 [[tool.hatch.envs.hatch-test.matrix]]

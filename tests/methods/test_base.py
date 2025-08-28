@@ -29,9 +29,9 @@ class ConcreteIntegrationMethod(BaseIntegrationMethod):
 class TestBaseIntegrationMethod:
     """Test suite for BaseIntegrationMethod."""
 
-    def test_initialization_default(self, lung_data):
+    def test_initialization_default(self, pbmc_data):
         """Test default initialization."""
-        method = ConcreteIntegrationMethod(lung_data)
+        method = ConcreteIntegrationMethod(pbmc_data)
 
         assert method.name == "ConcreteIntegration"
         assert method.embedding_key == "X_concreteintegration"
@@ -49,10 +49,10 @@ class TestBaseIntegrationMethod:
             ("custom_batch", "custom_celltype", "ConcreteIntegration"),
         ],
     )
-    def test_initialization_custom_keys(self, lung_data, batch_key, cell_type_key, expected_name):
+    def test_initialization_custom_keys(self, pbmc_data, batch_key, cell_type_key, expected_name):
         """Test initialization with custom keys."""
         # Add custom keys to test data
-        test_data = lung_data.copy()
+        test_data = pbmc_data.copy()
         if batch_key != "batch":
             test_data.obs[batch_key] = test_data.obs["batch"]
         if cell_type_key != "cell_type":
@@ -64,9 +64,9 @@ class TestBaseIntegrationMethod:
         assert method.batch_key == batch_key
         assert method.cell_type_key == cell_type_key
 
-    def test_validation_missing_batch_key(self, lung_data):
+    def test_validation_missing_batch_key(self, pbmc_data):
         """Test validation fails when batch key is missing."""
-        test_data = lung_data.copy()
+        test_data = pbmc_data.copy()
         del test_data.obs["batch"]
 
         with pytest.raises(ValueError, match="Batch key 'batch' not found"):
@@ -75,18 +75,18 @@ class TestBaseIntegrationMethod:
     def test_validation_spatial_data(self, spatial_data):
         """Test spatial data validation."""
         method = ConcreteIntegrationMethod(
-            spatial_data, validate_spatial=True, batch_key="embryo", cell_type_key="celltype_harmonized"
+            spatial_data, validate_spatial=True, batch_key="batch", cell_type_key="cell_type"
         )
         assert method.spatial_key in method.adata.obsm
 
-    def test_validation_spatial_data_missing_coords(self, lung_data):
+    def test_validation_spatial_data_missing_coords(self, pbmc_data):
         """Test spatial validation fails when coordinates are missing."""
         with pytest.raises(ValueError, match="Spatial coordinates not found"):
-            ConcreteIntegrationMethod(lung_data, validate_spatial=True)
+            ConcreteIntegrationMethod(pbmc_data, validate_spatial=True)
 
-    def test_fit_transform(self, lung_data):
+    def test_fit_transform(self, pbmc_data):
         """Test fit_transform workflow."""
-        method = ConcreteIntegrationMethod(lung_data)
+        method = ConcreteIntegrationMethod(pbmc_data)
 
         assert not method.is_fitted
         assert method.embedding_key not in method.adata.obsm
@@ -105,9 +105,9 @@ class TestBaseIntegrationMethod:
             ("h5", ".h5"),
         ],
     )
-    def test_save_embedding_formats(self, lung_data, format_type, expected_suffix):
+    def test_save_embedding_formats(self, pbmc_data, format_type, expected_suffix):
         """Test saving embeddings in different formats."""
-        method = ConcreteIntegrationMethod(lung_data)
+        method = ConcreteIntegrationMethod(pbmc_data)
         method.fit_transform()
 
         saved_path = method.save_embedding(format_type=format_type)
@@ -126,16 +126,16 @@ class TestBaseIntegrationMethod:
                 assert "cell_names" in f
                 assert "dim_names" in f
 
-    def test_save_embedding_before_fit(self, lung_data):
+    def test_save_embedding_before_fit(self, pbmc_data):
         """Test saving embedding fails before fitting."""
-        method = ConcreteIntegrationMethod(lung_data)
+        method = ConcreteIntegrationMethod(pbmc_data)
 
         with pytest.raises(ValueError, match="Method must be fitted"):
             method.save_embedding()
 
-    def test_get_model_info(self, lung_data):
+    def test_get_model_info(self, pbmc_data):
         """Test model info retrieval."""
-        method = ConcreteIntegrationMethod(lung_data, custom_param=123)
+        method = ConcreteIntegrationMethod(pbmc_data, custom_param=123)
         info = method.get_model_info()
 
         assert info["method"] == "ConcreteIntegration"
@@ -147,23 +147,23 @@ class TestBaseIntegrationMethod:
         info_fitted = method.get_model_info()
         assert info_fitted["is_fitted"]
 
-    def test_repr(self, lung_data):
+    def test_repr(self, pbmc_data):
         """Test string representation."""
-        method = ConcreteIntegrationMethod(lung_data, test_param="value")
+        method = ConcreteIntegrationMethod(pbmc_data, test_param="value")
         repr_str = repr(method)
 
         assert "ConcreteIntegrationMethod" in repr_str
         assert "test_param=value" in repr_str
         assert "not fitted" in repr_str
-        assert f"{lung_data.n_obs:,} cells" in repr_str
+        assert f"{pbmc_data.n_obs:,} cells" in repr_str
 
         method.fit()
         fitted_repr = repr(method)
         assert "fitted" in fitted_repr
 
-    def test_cell_type_handling_with_missing_values(self, lung_data):
+    def test_cell_type_handling_with_missing_values(self, pbmc_data):
         """Test handling of missing cell type values."""
-        test_data = lung_data.copy()
+        test_data = pbmc_data.copy()
         # Introduce some missing values
         test_data.obs.loc[test_data.obs.index[:10], "cell_type"] = pd.NA
 
@@ -175,9 +175,9 @@ class TestBaseIntegrationMethod:
         assert unlabeled_count == 10
 
     @pytest.mark.parametrize("use_hvg", [True, False])
-    def test_hvg_handling(self, lung_data, use_hvg):
+    def test_hvg_handling(self, pbmc_data, use_hvg):
         """Test highly variable genes handling."""
-        method = ConcreteIntegrationMethod(lung_data, use_hvg=use_hvg)
+        method = ConcreteIntegrationMethod(pbmc_data, use_hvg=use_hvg)
         assert method.use_hvg == use_hvg
 
         if use_hvg:
