@@ -79,6 +79,7 @@ optional-dependencies.test = [
   "pyarrow",      # for testing parquet format (already in main deps but explicit for tests)
   "pytest",
   "scembed[cpu]", # Include CPU dependencies for testing CPU methods
+  "scembed[gpu]", # Include GPU dependencies for testing GPU methods
 ]
 # https://docs.pypi.org/project_metadata/#project-urls
 urls.Documentation = "https://scembed.readthedocs.io/"

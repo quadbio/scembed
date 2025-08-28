@@ -20,21 +20,16 @@ def lung_data():
 
 
 @pytest.fixture
-def lung_data_mini():
+def lung_data_mini(lung_data):
     """Mini lung atlas dataset fixture for faster testing.
 
     Subsample of lung_data with ~5,000 cells for faster method testing.
     """
-    adata = sc.read("data/lung_atlas.h5ad", backup_url="https://figshare.com/ndownloader/files/24539942")
 
     # Subsample to 5000 cells for faster testing
-    sc.pp.subsample(adata, n_obs=5000, random_state=42)
+    sc.pp.subsample(lung_data, n_obs=5000, random_state=42)
 
-    # Simple preprocessing
-    sc.pp.highly_variable_genes(adata, n_top_genes=1000, flavor="cell_ranger", batch_key="batch")
-    sc.tl.pca(adata, n_comps=20, mask_var="highly_variable")
-
-    return adata
+    return lung_data
 
 
 @pytest.fixture
@@ -54,3 +49,16 @@ def spatial_data():
     sc.pp.log1p(adata)
 
     return adata
+
+
+@pytest.fixture
+def spatial_data_mini(spatial_data):
+    """Mini spatial transcriptomics dataset fixture for faster testing.
+
+    Subsample of spatial_data with ~5,000 cells for faster GPU method testing.
+    Maintains spatial structure and all necessary keys for spatial methods.
+    """
+    # Subsample the already processed spatial_data
+    sc.pp.subsample(spatial_data, n_obs=5000, random_state=42)
+
+    return spatial_data

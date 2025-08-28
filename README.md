@@ -20,6 +20,7 @@
 
 Single-cell RNA-sequencing (scRNA-seq) measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
 
+## Overview
 Here, we use `slurm_sweep` to efficiently parallelize and track different data integration approaches, and we compare their performance in terms of [scIB metrics](https://scib-metrics.readthedocs.io/en/stable/). For each data integration method, we compute a shared latent space, quantify integration performance in terms of batch correction and bio conservation, visualize the latent space with UMAP, store the model and embedding coordinates, and store all relevant data on wandb, so that we can retrieve it after the sweep.
 
 `scembed` consists of shallow wrappers around commonly used integration tools, a class to facilitate scIB comparisons, and another class to retrieve and aggregate sweep results.
@@ -109,6 +110,5 @@ Please use our [zenodo][] entry to cite this software.
 
 [coverage]: https://codecov.io/gh/quadbio/scembed
 [pre-commit]: https://results.pre-commit.ci/latest/github/quadbio/scembed/main
-[pypi]: https://pypi.org/project/scembed/
 [downloads]: https://pepy.tech/project/scembed
-[zenodo]: 10.5281/zenodo.16982001
+[zenodo]: https://doi.org/10.5281/zenodo.16982001
