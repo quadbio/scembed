@@ -10,9 +10,9 @@ import scanpy as sc
 import wandb
 from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
 from scib_metrics.benchmark._core import metric_name_cleaner
-from slurm_sweep._logging import logger
 from tqdm import tqdm
 
+from scembed.logging import logger
 from scembed.utils import _download_artifact_by_run_id
 
 

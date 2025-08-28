@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import scanpy as sc
 from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
-from slurm_sweep._logging import logger
 
 from scembed.check import check_deps
+from scembed.logging import logger
 from scembed.utils import faiss_brute_force_nn, subsample_adata
 
 

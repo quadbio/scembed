@@ -2,9 +2,9 @@
 
 import numpy as np
 import scanpy as sc
-from slurm_sweep._logging import logger
 
 from scembed.check import check_deps
+from scembed.logging import logger
 
 from .base import BaseIntegrationMethod
 

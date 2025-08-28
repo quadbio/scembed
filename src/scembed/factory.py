@@ -1,7 +1,6 @@
 """Factory for creating integration method instances."""
 
-from slurm_sweep._logging import logger
-
+from scembed.logging import logger
 from scembed.methods import (
     HarmonyMethod,
     HVGMethod,

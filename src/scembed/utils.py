@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 import wandb
 from scib_metrics.nearest_neighbors import NeighborsResults
-from slurm_sweep._logging import logger
 
 from scembed.check import check_deps
+from scembed.logging import logger
 
 
 def faiss_brute_force_nn(X: np.ndarray, k: int):

@@ -5,9 +5,8 @@ import tempfile
 from pathlib import Path
 from typing import Literal
 
-from slurm_sweep._logging import logger
-
 from scembed.check import check_deps
+from scembed.logging import logger
 from scembed.utils import _get_wandb_logger
 
 from .base import BaseIntegrationMethod

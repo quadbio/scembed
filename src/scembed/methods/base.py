@@ -12,7 +12,8 @@ import h5py
 import numpy as np
 import pandas as pd
 from scipy.sparse import issparse
-from slurm_sweep._logging import logger
+
+from scembed.logging import logger
 
 
 class BaseIntegrationMethod(ABC):
