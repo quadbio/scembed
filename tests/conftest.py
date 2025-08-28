@@ -50,7 +50,7 @@ def pbmc_data() -> AnnData:
     adata.var_names_make_unique()
 
     # Store raw counts before normalization and add test annotations
-    adata.layers["counts"] = adata.X
+    adata.layers["counts"] = adata.X.copy()
     _add_categorical_annotation(adata, "batch", [f"batch_{i}" for i in range(3)])
     _add_categorical_annotation(adata, "cell_type", ["T_cells", "B_cells", "NK_cells", "Monocytes", "Dendritic"])
 
