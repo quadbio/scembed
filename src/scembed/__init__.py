@@ -1,4 +1,4 @@
-"""Single-cell embedding comparison utilities for slurm_sweep examples."""
+"""Single-cell embedding comparison utilities and evaluation."""
 
 from importlib.metadata import version
 
