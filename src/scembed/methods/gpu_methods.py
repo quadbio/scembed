@@ -241,6 +241,7 @@ class scANVIMethod(BaseIntegrationMethod):
         linear_classifier: bool | None = None,
         batch_size: int | None = None,
         lr: float | None = None,
+        n_samples_per_label: int | None = None,
         **kwargs,
     ):
         """
@@ -266,6 +267,8 @@ class scANVIMethod(BaseIntegrationMethod):
             Batch size for training.
         lr
             Learning rate for the optimizer.
+        n_samples_per_label
+            Number of subsamples for each label class to sample per epoch. By default, there is no label subsampling.
         """
         super().__init__(
             adata,
@@ -276,6 +279,7 @@ class scANVIMethod(BaseIntegrationMethod):
             linear_classifier=linear_classifier,
             batch_size=batch_size,
             lr=lr,
+            n_samples_per_label=n_samples_per_label,
             **kwargs,
         )
         self.scvi_params = scvi_params or {}
@@ -285,6 +289,7 @@ class scANVIMethod(BaseIntegrationMethod):
         self.linear_classifier = linear_classifier
         self.batch_size = batch_size
         self.lr = lr
+        self.n_samples_per_label = n_samples_per_label
         self.scvi_model = None
         self.model = None
 
@@ -329,6 +334,7 @@ class scANVIMethod(BaseIntegrationMethod):
                 "early_stopping": self.early_stopping,
                 "accelerator": self.accelerator,
                 "batch_size": self.batch_size,
+                "n_samples_per_label": self.n_samples_per_label,
             }
         )
         if wandb_logger is not None:
