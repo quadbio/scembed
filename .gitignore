@@ -18,3 +18,7 @@ __pycache__/
 # docs
 /docs/generated/
 /docs/_build/
+
+# notebooks
+*.ipynb_checkpoints/
+data/
