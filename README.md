@@ -71,11 +71,6 @@ pip install scembed
 pip install git+https://github.com/quadbio/scembed.git@main
 ```
 
-**Note**: If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda first:
-```bash
-mamba install louvain python-annoy
-```
-
 ### Dependency Groups
 
 The package uses optional dependency groups to minimize installation overhead:
@@ -85,6 +80,11 @@ The package uses optional dependency groups to minimize installation overhead:
 - **`[gpu]`**: GPU-based methods (e.g. scVI, scANVI, scPoli)
 - **`[fast_metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS`
 - **`[all]`**: All optional dependencies
+
+**Note**: If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda/mamba first:
+```bash
+mamba install louvain python-annoy
+```
 
 ## Release notes
 
