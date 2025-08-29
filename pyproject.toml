@@ -23,7 +23,6 @@ classifiers = [
 dynamic = [ "version" ]
 
 dependencies = [
-  "numba>=0.61",
   "numpy>=2.1",
   "pyarrow>=21",         # Required for parquet support in pandas
   "scanpy>=1.11.4",
@@ -98,25 +97,12 @@ scripts.build = "sphinx-build -M html docs docs/_build {args}"
 scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 scripts.clean = "git clean -fdX -- {args:docs}"
 
-# Test the lowest and highest supported Python versions with normal deps
+# Test the lowest and highest supported Python versions with stable deps
 [[tool.hatch.envs.hatch-test.matrix]]
-deps = [ "stable" ]
 python = [ "3.11", "3.13" ]
-
-# Test Python 3.13 with pre-release deps using recent numba versions
-[[tool.hatch.envs.hatch-test.matrix]]
-deps = [ "pre" ]
-python = [ "3.13" ]
 
 [tool.hatch.envs.hatch-test]
 features = [ "test" ]
-
-[tool.hatch.envs.hatch-test.overrides]
-# If the matrix variable `deps` is set to "pre",
-# set the environment variable `UV_PRERELEASE` to "allow".
-matrix.deps.env-vars = [
-  { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
-]
 
 [tool.ruff]
 line-length = 120
