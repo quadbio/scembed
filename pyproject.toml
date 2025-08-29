@@ -102,10 +102,10 @@ scripts.clean = "git clean -fdX -- {args:docs}"
 deps = [ "stable" ]
 python = [ "3.11", "3.13" ]
 
-# Test Python 3.12 with pre-release deps (3.13 pre-release has llvmlite compatibility issues)
+# Test Python 3.13 with pre-release deps using recent numba versions
 [[tool.hatch.envs.hatch-test.matrix]]
 deps = [ "pre" ]
-python = [ "3.12" ]
+python = [ "3.13" ]
 
 [tool.hatch.envs.hatch-test]
 features = [ "test" ]
@@ -115,6 +115,11 @@ features = [ "test" ]
 # set the environment variable `UV_PRERELEASE` to "allow".
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
+]
+# For pre-release testing, use recent numba versions that support Python 3.13
+matrix.deps.dependencies = [
+  { value = "numba>=0.61.0", if = [ "pre" ] },
+  # { value = "llvmlite>=0.43.0", if = [ "pre" ] },
 ]
 
 [tool.ruff]
