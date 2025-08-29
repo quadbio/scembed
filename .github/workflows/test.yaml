@@ -71,6 +71,11 @@ jobs:
         with:
           python-version: ${{ matrix.env.python }}
           cache-dependency-glob: pyproject.toml
+      - name: Install LLVM for llvmlite compilation
+        if: contains(matrix.env.name, 'pre')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-dev
       - name: create hatch environment
         run: uvx hatch env create ${{ matrix.env.name }}
       - name: run tests using hatch
