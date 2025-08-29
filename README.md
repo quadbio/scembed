@@ -1,4 +1,4 @@
-# Comparing embeddings for single-cell and spatial data
+# 🧬 Comparing embeddings for single-cell and spatial data
 
 [![Tests][badge-tests]][tests]
 [![Documentation][badge-docs]][documentation]
@@ -18,20 +18,20 @@
 [badge-zenodo]: https://zenodo.org/badge/1046168919.svg
 
 
-Single-cell RNA-sequencing (scRNA-seq) measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
+Single-cell RNA-sequencing (scRNA-seq) 🧪 measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
 
-## Overview
-Here, we use `slurm_sweep` to efficiently parallelize and track different data integration approaches, and we compare their performance in terms of [scIB metrics](https://scib-metrics.readthedocs.io/en/stable/). For each data integration method, we compute a shared latent space, quantify integration performance in terms of batch correction and bio conservation, visualize the latent space with UMAP, store the model and embedding coordinates, and store all relevant data on wandb, so that we can retrieve it after the sweep.
+## 🎯 Overview
+Here, we use `slurm_sweep` to efficiently parallelize and track different data integration approaches, and we compare their performance in terms of [scIB metrics](https://scib-metrics.readthedocs.io/en/stable/) ([Luecken et al., 2022](https://doi.org/10.1038/s41592-021-01336-8)). For each data integration method, we compute a shared latent space, quantify integration performance in terms of batch correction and bio conservation, visualize the latent space with UMAP, store the model and embedding coordinates, and store all relevant data on wandb, so that we can retrieve it after the sweep.
 
 `scembed` consists of shallow wrappers around commonly used integration tools, a class to facilitate scIB comparisons, and another class to retrieve and aggregate sweep results.
 
 
-## Getting started
+## 🚀 Getting started
 
 Please refer to the [documentation][],
 in particular, the [API documentation][].
 
-## Installation
+## 📦 Installation
 
 You need to have Python 3.10 or newer installed on your system.
 If you don't have Python installed, we recommend installing [uv][].
@@ -50,31 +50,31 @@ pip install scembed
 pip install git+https://github.com/quadbio/scembed.git@main
 ```
 
-### Dependency Groups
+### 🎯 Dependency Groups
 
 The package uses optional dependency groups to minimize installation overhead:
 
 - **Base**: Core functionality (scanpy, scib-metrics, wandb)
 - **`[cpu]`**: CPU-based methods (e.g. Harmony, LIGER, Scanorama)
 - **`[gpu]`**: GPU-based methods (e.g. scVI, scANVI, scPoli)
-- **`[fast_metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS`
+- **`[fast_metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS` ⚡
 - **`[all]`**: All optional dependencies
 
-**Note**: If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda/mamba first:
+**⚠️ Note**: If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda/mamba first:
 ```bash
 mamba install louvain python-annoy
 ```
 
-## Release notes
+## 📝 Release notes
 
 See the [changelog][].
 
-## Contact
+## 💬 Contact
 
 For questions and help requests, you can reach out in the [scverse discourse][].
 If you found a bug, please use the [issue tracker][].
 
-## Citation
+## 📖 Citation
 
 Please use our [zenodo][] entry to cite this software.
 
