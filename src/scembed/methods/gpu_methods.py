@@ -13,7 +13,11 @@ from .base import BaseIntegrationMethod
 
 
 class HarmonyMethod(BaseIntegrationMethod):
-    """Harmony integration method (GPU-accelerated)."""
+    """Harmony integration method (GPU-accelerated).
+
+    Wrapper around the Harmony method :cite:`korsunsky2019fast` for fast,
+    sensitive and accurate integration of single-cell data.
+    """
 
     def __init__(self, adata, theta: float | None = None, **kwargs):
         """
@@ -59,7 +63,12 @@ class HarmonyMethod(BaseIntegrationMethod):
 
 
 class scVIMethod(BaseIntegrationMethod):
-    """scVI integration method."""
+    """scVI integration method.
+
+    Wrapper around the scVI method :cite:`lopez2018deep` for deep generative
+    modeling of single-cell transcriptomics. Part of the scvi-tools framework
+    :cite:`gayoso2022python`.
+    """
 
     def __init__(
         self,
@@ -215,7 +224,12 @@ class scVIMethod(BaseIntegrationMethod):
 
 
 class scANVIMethod(BaseIntegrationMethod):
-    """scANVI integration method."""
+    """scANVI integration method.
+
+    Wrapper around the scANVI method :cite:`xu2021probabilistic` for probabilistic
+    harmonization and annotation of single-cell transcriptomics data with deep
+    generative models. Part of the scvi-tools framework :cite:`gayoso2022python`.
+    """
 
     def __init__(
         self,
@@ -354,7 +368,11 @@ class scANVIMethod(BaseIntegrationMethod):
 
 
 class scPoliMethod(BaseIntegrationMethod):
-    """scPoli integration method."""
+    """scPoli integration method.
+
+    Wrapper around the scPoli method :cite:`de2023population` for population-level
+    integration of single-cell datasets that enables multi-scale analysis across samples.
+    """
 
     def __init__(
         self,
@@ -559,7 +577,12 @@ class scPoliMethod(BaseIntegrationMethod):
 
 
 class ResolVIMethod(BaseIntegrationMethod):
-    """ResolVI integration method for spatial transcriptomics."""
+    """ResolVI integration method for spatial transcriptomics.
+
+    Wrapper around the ResolVI method :cite:`ergen2025resolvi` for addressing
+    noise and bias in spatial transcriptomics. Part of the scvi-tools framework
+    :cite:`gayoso2022python`.
+    """
 
     def __init__(
         self,
@@ -790,7 +813,12 @@ class ResolVIMethod(BaseIntegrationMethod):
 
 
 class scVIVAMethod(BaseIntegrationMethod):
-    """scVIVA integration method for spatial transcriptomics with neighborhood modeling."""
+    """scVIVA integration method for spatial transcriptomics with neighborhood modeling.
+
+    Wrapper around the scVIVA method :cite:`levy2025scviva` for probabilistic
+    framework for representation of cells and their environments in spatial
+    transcriptomics. Part of the scvi-tools framework :cite:`gayoso2022python`.
+    """
 
     def __init__(
         self,

@@ -25,27 +25,6 @@ Here, we use `slurm_sweep` to efficiently parallelize and track different data i
 
 `scembed` consists of shallow wrappers around commonly used integration tools, a class to facilitate scIB comparisons, and another class to retrieve and aggregate sweep results.
 
-### Methods included
-- **GPU-based methods**: scVI, scANVI, scPoli, ResolVI, scVIVA
-- **CPU-based methods**: Harmony, LIGER, Scanorama, HVG, Pre-computed embeddings
-
-### Evaluation
-- **scIB metrics**: Standardized benchmarking for integration quality
-- **UMAP visualization**: Visual assessment of integration
-- **Artifact tracking**: Models and embeddings stored in wandb
-
-## Outputs
-
-### Per Method
-- **Integration embedding**: Stored in wandb as table
-- **scIB metrics**: Comprehensive benchmarking scores
-- **UMAP plots**: Visualization by cell type and batch
-- **Model weights**: For deep learning methods
-
-### Summary Metrics
-- **scib_total_score**: Overall integration quality
-- **scib_bio_conservation**: Preservation of biological signal
-- **scib_batch_correction**: Removal of batch effects
 
 ## Getting started
 
