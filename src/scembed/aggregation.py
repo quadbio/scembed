@@ -96,9 +96,12 @@ class scIBAggregator:
             run_data = {
                 "run_id": run.id,
                 "name": run.name,
-                **run.config,
                 **dict(run.summary),
             }
+            if "config" not in run.config.keys():
+                run_data["config"] = run.config
+            else:
+                run_data.update(**run.config)
             data.append(run_data)
 
         # Convert to DataFrame
