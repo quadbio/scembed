@@ -23,7 +23,8 @@ classifiers = [
 dynamic = [ "version" ]
 
 dependencies = [
-  "numpy>=2",
+  "numba>=0.61",
+  "numpy>=2.1",
   "pyarrow>=21",         # Required for parquet support in pandas
   "scanpy>=1.11.4",
   "scib-metrics>=0.5.6",
@@ -115,11 +116,6 @@ features = [ "test" ]
 # set the environment variable `UV_PRERELEASE` to "allow".
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
-]
-# For pre-release testing, use recent numba versions that support Python 3.13
-matrix.deps.dependencies = [
-  { value = "numba>=0.61.0", if = [ "pre" ] },
-  # { value = "llvmlite>=0.43.0", if = [ "pre" ] },
 ]
 
 [tool.ruff]
