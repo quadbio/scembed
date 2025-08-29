@@ -46,7 +46,11 @@ class PrecomputedEmbeddingMethod(BaseIntegrationMethod):
 
 
 class LIGERMethod(BaseIntegrationMethod):
-    """LIGER integration method."""
+    """LIGER integration method.
+
+    Wrapper around the LIGER method :cite:`welch2019single` for single-cell
+    multi-omic integration.
+    """
 
     def __init__(
         self,
@@ -231,7 +235,10 @@ class LIGERMethod(BaseIntegrationMethod):
 
 
 class HVGMethod(BaseIntegrationMethod):
-    """Highly Variable Genes method using scanpy."""
+    """Highly Variable Genes method using scanpy.
+
+    Uses scanpy :cite:`wolf2018scanpy` for highly variable gene selection.
+    """
 
     def __init__(
         self,
@@ -362,7 +369,11 @@ class HVGMethod(BaseIntegrationMethod):
 
 
 class ScanoramaMethod(BaseIntegrationMethod):
-    """Scanorama integration method."""
+    """Scanorama integration method.
+
+    Wrapper around the Scanorama method :cite:`hie2019efficient` for efficient
+    integration of heterogeneous single-cell transcriptomes.
+    """
 
     def __init__(
         self,

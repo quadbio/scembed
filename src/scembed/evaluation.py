@@ -16,7 +16,11 @@ from scembed.utils import faiss_brute_force_nn, subsample_adata
 
 
 class IntegrationEvaluator:
-    """Evaluator for single-cell integration methods."""
+    """Evaluator for single-cell integration methods.
+
+    Evaluates integration quality using scIB metrics :cite:`luecken2022benchmarking`
+    for benchmarking atlas-level data integration in single-cell genomics.
+    """
 
     def __init__(
         self,
@@ -110,7 +114,7 @@ class IntegrationEvaluator:
         batch_correction_metrics: BatchCorrection | None = None,
     ) -> None:
         """
-        Evaluate integration using scIB metrics.
+        Evaluate integration using scIB metrics :cite:`luecken2022benchmarking`.
 
         Parameters
         ----------
@@ -208,7 +212,7 @@ class IntegrationEvaluator:
         **kwargs: Any,
     ) -> None:
         """
-        Compute and visualize UMAP embedding.
+        Compute and visualize UMAP embedding using scanpy :cite:`wolf2018scanpy`.
 
         Parameters
         ----------

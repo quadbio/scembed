@@ -20,7 +20,8 @@ class scIBAggregator:
     """Aggregator for WandB sweep results with scIB metrics visualization.
 
     Retrieves runs from a WandB project, organizes them by integration method,
-    and provides visualization capabilities using scIB metrics formatting.
+    and provides visualization capabilities using scIB metrics formatting
+    :cite:`luecken2022benchmarking`.
 
     Parameters
     ----------
@@ -95,9 +96,12 @@ class scIBAggregator:
             run_data = {
                 "run_id": run.id,
                 "name": run.name,
-                **run.config,
                 **dict(run.summary),
             }
+            if "config" not in run.config.keys():
+                run_data["config"] = run.config
+            else:
+                run_data.update(**run.config)
             data.append(run_data)
 
         # Convert to DataFrame
@@ -254,6 +258,9 @@ class scIBAggregator:
 
     def _create_benchmarker_for_method(self, scib_df: pd.DataFrame) -> Benchmarker:
         """Create a Benchmarker object for scIB metrics results.
+
+        Uses the scIB benchmarking framework :cite:`luecken2022benchmarking` to
+        organize and visualize integration method evaluation results.
 
         Parameters
         ----------

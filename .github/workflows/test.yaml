@@ -78,6 +78,7 @@ jobs:
           MPLBACKEND: agg
           PLATFORM: ${{ matrix.os }}
           DISPLAY: :42
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
         run: uvx hatch run ${{ matrix.env.name }}:run-cov
       - name: generate coverage report
         run: uvx hatch run ${{ matrix.env.name }}:coverage xml
