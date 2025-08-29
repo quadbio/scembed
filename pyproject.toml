@@ -116,6 +116,12 @@ features = [ "test" ]
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
 ]
+# For pre-release Python, use stable versions that are known to work together
+# to avoid numba/scanpy typing issues with Python 3.13
+matrix.deps.dependencies = [
+  { value = "numba==0.60.*", if = [ "pre" ] },
+  { value = "llvmlite==0.43.*", if = [ "pre" ] },
+]
 
 [tool.ruff]
 line-length = 120
