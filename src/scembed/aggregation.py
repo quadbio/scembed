@@ -533,7 +533,7 @@ class scIBAggregator:
                 download_dir=embeddings_dir,
             )
 
-            logger.debug("─" * 50)  # Visual separatorgit
+            logger.debug("─" * 50)  # Visual separator
 
     @property
     def available_methods(self) -> list[str]:
