@@ -515,12 +515,8 @@ class scIBAggregator:
             models_dir.mkdir(exist_ok=True)
             embeddings_dir.mkdir(exist_ok=True)
 
-            # Track what was downloaded for summary
-            downloaded_items = []
-            missing_items = []
-
             # Try to download model (may not exist for CPU methods)
-            model_path = _download_artifact_by_run_id(
+            _model_path = _download_artifact_by_run_id(
                 run_id=run_id,
                 entity=self.entity,
                 project=self.project,
@@ -528,47 +524,14 @@ class scIBAggregator:
                 download_dir=models_dir,
             )
 
-            if model_path is None:
-                logger.debug("No model artifact found for method '%s'", method)
-                missing_items.append("model")
-            else:
-                logger.debug("Downloaded model for method '%s'", method)
-                downloaded_items.append("models")
-
             # Try to download embedding
-            embedding_path = _download_artifact_by_run_id(
+            _embedding_path = _download_artifact_by_run_id(
                 run_id=run_id,
                 entity=self.entity,
                 project=self.project,
                 artifact_name=embedding_artifact_name,
                 download_dir=embeddings_dir,
             )
-
-            if embedding_path is None:
-                missing_items.append("embedding")
-            else:
-                downloaded_items.append("embeddings")
-
-            # Summary logging per method
-            if downloaded_items and missing_items:
-                logger.info(
-                    "Downloaded %s for method '%s' to %s/%s/",
-                    " and ".join(downloaded_items),
-                    method,
-                    self.output_dir,
-                    method,
-                )
-                logger.warning("Missing %s for method '%s' (run_id: %s)", " and ".join(missing_items), method, run_id)
-            elif downloaded_items:
-                logger.info(
-                    "Downloaded %s for method '%s' to %s/%s/",
-                    " and ".join(downloaded_items),
-                    method,
-                    self.output_dir,
-                    method,
-                )
-            else:
-                logger.warning("No artifacts found for method '%s' (run_id: %s)", method, run_id)
 
     @property
     def available_methods(self) -> list[str]:
