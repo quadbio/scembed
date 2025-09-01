@@ -2,9 +2,10 @@
 
 import logging
 import os
+from typing import Literal
 
 
-def _setup_logger() -> "logging.Logger":
+def _setup_logger() -> logging.Logger:
     from rich.console import Console
     from rich.logging import RichHandler
 
@@ -20,6 +21,33 @@ def _setup_logger() -> "logging.Logger":
     # this prevents double outputs
     logger.propagate = False
     return logger
+
+
+def set_log_level(
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | Literal[10, 20, 30, 40, 50],
+) -> None:
+    """Set the logging level for the scembed logger.
+
+    Parameters
+    ----------
+    level
+        Logging level. Can be a string ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        or logging constants (logging.DEBUG=10, logging.INFO=20, logging.WARNING=30,
+        logging.ERROR=40, logging.CRITICAL=50).
+
+    Examples
+    --------
+    >>> import scembed.logging
+    >>> scembed.logging.set_log_level("DEBUG")
+    >>> scembed.logging.set_log_level(logging.INFO)
+    """
+    if isinstance(level, str):
+        level = getattr(logging, level.upper())
+
+    logger.setLevel(level)
+    # Update handlers to ensure they respect the new level
+    for handler in logger.handlers:
+        handler.setLevel(level)
 
 
 logger = _setup_logger()
