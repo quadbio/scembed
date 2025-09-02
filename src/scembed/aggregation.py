@@ -533,6 +533,8 @@ class scIBAggregator:
                 download_dir=embeddings_dir,
             )
 
+            logger.debug("─" * 50)  # Visual separator
+
     @property
     def available_methods(self) -> list[str]:
         """List of available methods in the data."""
