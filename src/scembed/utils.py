@@ -141,7 +141,9 @@ def _download_artifact_by_run_id(
         )
 
     current_name, current_artifact = next(iter(artifacts.items()))
-    artifact_dir = current_artifact.download(root=download_dir)
+    # Create subdirectory for this specific artifact
+    artifact_specific_dir = download_dir / current_name
+    artifact_dir = current_artifact.download(root=artifact_specific_dir)
     logger.debug("Downloaded '%s' from run '%s' to: '%s'", current_name, run_id, artifact_dir)
     return Path(artifact_dir)
 
