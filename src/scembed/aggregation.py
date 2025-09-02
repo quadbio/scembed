@@ -506,7 +506,7 @@ class scIBAggregator:
             logger.debug("Processing method '%s', run_id: %s", method, run_id)
 
             # Create method directory
-            method_dir = self.output_dir / method
+            method_dir = self.output_dir / f"{method}_{run_id}"
             method_dir.mkdir(parents=True, exist_ok=True)
 
             # Create subdirectories
