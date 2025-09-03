@@ -530,6 +530,9 @@ class scPoliMethod(BaseIntegrationMethod):
         # Use base class helper for HVG subsetting (scPoli needs this in multiple places)
         adata_prepared = self._prepare_adata_for_setup()
 
+        # Note: scPoli expects raw counts in .X, so we need to copy from layer
+        adata_prepared.X = adata_prepared.layers[self.counts_layer].copy()
+
         # Store the prepared data for use in both fit() and transform()
         self.setup_state["adata_prepared"] = adata_prepared
         self.setup_state["is_setup"] = True
@@ -558,10 +561,6 @@ class scPoliMethod(BaseIntegrationMethod):
             "lr_factor": 0.1,
         }
 
-        # Create and train scPoli model
-        # Note: scPoli expects raw counts in .X, so we need to copy from layer
-        adata_hvg.X = adata_hvg.layers[self.counts_layer].copy()
-
         # Prepare scPoli model parameters, filtering out None values
         scpoli_params = self._filter_none_params(
             {
@@ -582,6 +581,7 @@ class scPoliMethod(BaseIntegrationMethod):
             }
         )
 
+        # Create scPoli model
         self.model = scPoli(
             adata=adata_hvg,
             **scpoli_params,

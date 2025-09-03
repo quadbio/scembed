@@ -57,7 +57,12 @@ class TestRetrieval:
                 "method_class": scembed.methods.ResolVIMethod,
                 "embedding_key": "X_resolvi",
                 "wandb_embedding_key": "X_resolvi_wandb",
-                "extra_params": {"n_latent": 10, "n_neighbors": 10, "spatial_key": "spatial"},
+                "extra_params": {
+                    "n_latent": 10,
+                    "n_neighbors": 10,
+                    "spatial_key": "spatial",
+                    "downsample_counts": False,
+                },
                 "fixture": "spatial_data",
             },
         ],
