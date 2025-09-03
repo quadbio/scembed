@@ -317,7 +317,11 @@ class BaseIntegrationMethod(ABC):
         logger.info("Data setup completed for %s method", self.name)
 
     def load_artifact(
-        self, source: str | Path | dict, artifact_type: Literal["model", "embedding"] = "model", **kwargs
+        self,
+        source: str | Path | dict,
+        artifact_type: Literal["model", "embedding"] = "model",
+        embedding_key: str | None = None,
+        **kwargs,
     ) -> None:
         """
         Load a pre-trained model or embedding from various sources.
@@ -330,6 +334,9 @@ class BaseIntegrationMethod(ABC):
             - dict: WandB parameters with keys 'run_id', 'entity', 'project'
         artifact_type
             Type of artifact to load: 'model' or 'embedding'.
+        embedding_key
+            Key to store embedding in adata.obsm. If None, uses self.embedding_key.
+            Only used when artifact_type='embedding'.
         **kwargs
             Additional arguments passed to loading functions.
         """
@@ -353,13 +360,13 @@ class BaseIntegrationMethod(ABC):
             if artifact_type == "model":
                 self._load_from_disk(downloaded_path, **kwargs)
             else:  # artifact_type == "embedding"
-                self._load_embedding_from_disk(downloaded_path, **kwargs)
+                self._load_embedding_from_disk(downloaded_path, embedding_key=embedding_key, **kwargs)
         else:
             # Local path loading
             if artifact_type == "model":
                 self._load_from_disk(Path(source), **kwargs)
             else:  # artifact_type == "embedding"
-                self._load_embedding_from_disk(Path(source), **kwargs)
+                self._load_embedding_from_disk(Path(source), embedding_key=embedding_key, **kwargs)
 
     def _load_from_wandb(
         self,
@@ -424,7 +431,7 @@ class BaseIntegrationMethod(ABC):
         """
         raise NotImplementedError
 
-    def _load_embedding_from_disk(self, embedding_path: Path, **kwargs) -> None:
+    def _load_embedding_from_disk(self, embedding_path: Path, embedding_key: str | None = None, **kwargs) -> None:
         """
         Load embedding from local disk.
 
@@ -432,10 +439,15 @@ class BaseIntegrationMethod(ABC):
         ----------
         embedding_path
             Path to the embedding file or directory containing embedding files.
+        embedding_key
+            Key to store embedding in adata.obsm. If None, uses self.embedding_key.
         **kwargs
             Additional arguments for embedding loading (unused, for compatibility).
         """
         _ = kwargs  # Silence unused parameter warning
+
+        # Use provided embedding key or default to method's embedding key
+        target_key = embedding_key if embedding_key is not None else self.embedding_key
 
         # If path is a directory (e.g., downloaded WandB artifact), find the embedding file
         if embedding_path.is_dir():
@@ -457,9 +469,9 @@ class BaseIntegrationMethod(ABC):
         embedding_df = load_embedding(embedding_file)
 
         # Store in adata.obsm
-        self.adata.obsm[self.embedding_key] = embedding_df.values
+        self.adata.obsm[target_key] = embedding_df.values
 
-        logger.info("Loaded %s embedding from '%s'", self.name, embedding_file)
+        logger.info("Loaded %s embedding from '%s' into key '%s'", self.name, embedding_file, target_key)
 
     def _load_scvi_model(self, model_path: Path, model_class_path: str, **kwargs) -> None:
         """
