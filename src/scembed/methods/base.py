@@ -334,12 +334,24 @@ class BaseIntegrationMethod(ABC):
             Additional arguments passed to loading functions.
         """
         if isinstance(source, dict):
-            # WandB loading
+            # WandB loading - download first, then load with appropriate method
             if artifact_type == "model":
                 artifact_name = "trained_model"
             else:  # artifact_type == "embedding"
                 artifact_name = "embedding"
-            self._load_from_wandb(artifact_name=artifact_name, **source, **kwargs)
+
+            downloaded_path = self._load_from_wandb(artifact_name=artifact_name, **source)
+
+            if downloaded_path is None:
+                raise ValueError(
+                    f"Could not download artifact '{artifact_name}' from run {source.get('run_id', 'unknown')}"
+                )
+
+            # Call appropriate loading method based on artifact type
+            if artifact_type == "model":
+                self._load_from_disk(downloaded_path, **kwargs)
+            else:  # artifact_type == "embedding"
+                self._load_embedding_from_disk(downloaded_path, **kwargs)
         else:
             # Local path loading
             if artifact_type == "model":
@@ -353,10 +365,9 @@ class BaseIntegrationMethod(ABC):
         entity: str,
         project: str,
         artifact_name: str = "trained_model",
-        **kwargs,
-    ) -> None:
+    ) -> Path:
         """
-        Load model from WandB.
+        Download artifact from WandB and return the path.
 
         Parameters
         ----------
@@ -368,8 +379,11 @@ class BaseIntegrationMethod(ABC):
             WandB project.
         artifact_name
             Name of the artifact to download.
-        **kwargs
-            Additional arguments passed to _load_from_disk.
+
+        Returns
+        -------
+        Path
+            Path to the downloaded artifact.
         """
         downloaded_path = _download_artifact_by_run_id(
             run_id=run_id,
@@ -382,7 +396,7 @@ class BaseIntegrationMethod(ABC):
         if downloaded_path is None:
             raise ValueError(f"Could not download artifact '{artifact_name}' from run {run_id}")
 
-        self._load_from_disk(downloaded_path, **kwargs)
+        return downloaded_path
 
     def _load_from_disk(self, model_path: Path, **kwargs) -> None:
         """
