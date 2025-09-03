@@ -1033,6 +1033,9 @@ class scVIVAMethod(BaseIntegrationMethod):
         if self.embedding_method not in ["scvi", "scanvi"]:
             raise ValueError(f"embedding_method must be 'scvi' or 'scanvi', got: {self.embedding_method}")
 
+        # Get the prepared data that scVIVA will actually use
+        adata_hvg = self.setup_state["adata_prepared"]
+
         # Prepare embedding parameters and create embedding model
         if self.embedding_method == "scvi":
             embedding_params = self.scvi_params.copy()
@@ -1048,8 +1051,8 @@ class scVIVAMethod(BaseIntegrationMethod):
             self.embedding_model = scVIMethod(self.adata, **embedding_params)
             self.embedding_model.fit_transform()
             expression_embedding_key = "X_scvi"
-            # Transfer embedding to main adata since methods now work on copies
-            self.adata.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
+            # Transfer embedding to the prepared data that scVIVA will use
+            adata_hvg.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
 
         else:  # embedding_method == "scanvi"
             embedding_params = self.scanvi_params.copy()
@@ -1067,14 +1070,11 @@ class scVIVAMethod(BaseIntegrationMethod):
             self.embedding_model = scANVIMethod(self.adata, **embedding_params)
             self.embedding_model.fit_transform()
             expression_embedding_key = "X_scanvi"
-            # Transfer embedding to main adata since methods now work on copies
-            self.adata.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
+            # Transfer embedding to the prepared data that scVIVA will use
+            adata_hvg.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
 
         # Step 2: Run scVIVA preprocessing to compute spatial neighborhoods
         logger.info("Running scVIVA preprocessing")
-
-        # Use the prepared data from setup
-        adata_hvg = self.setup_state["adata_prepared"]
 
         # Prepare preprocessing parameters, filtering out None values for k_nn only
         preprocessing_params = {
