@@ -151,16 +151,35 @@ class scVIMethod(BaseIntegrationMethod):
         self.lr = lr
         self.model = None
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup scVI-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Handle HVG subsetting
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            adata_prepared = self.adata.copy()
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("scVI data setup completed")
+
     def fit(self):
         """Fit scVI model."""
         check_deps("scvi-tools")
         import scvi
 
-        # Subset to highly variable genes
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
+        # Ensure data is setup
+        self.setup()
+
+        # Use the prepared data
+        adata_hvg = self.setup_state["adata_prepared"]
 
         # Setup scVI with counts layer
         scvi.model.SCVI.setup_anndata(adata_hvg, layer=self.counts_layer, batch_key=self.batch_key)
@@ -203,6 +222,11 @@ class scVIMethod(BaseIntegrationMethod):
 
         self.model.train(**train_params)
         self.is_fitted = True
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """Load scVI model from disk."""
+        check_deps("scvi-tools")
+        self._load_scvi_model(model_path, "scvi.model.SCVI", **kwargs)
 
     def transform(self):
         """Get scVI latent representation."""
@@ -293,10 +317,32 @@ class scANVIMethod(BaseIntegrationMethod):
         self.scvi_model = None
         self.model = None
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup scANVI-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # scANVI uses the same preprocessing as scVI
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            adata_prepared = self.adata.copy()
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("scANVI data setup completed")
+
     def fit(self):
         """Fit scANVI model."""
         check_deps("scvi-tools")
         import scvi
+
+        # Ensure data is setup
+        self.setup()
 
         # Step 1: Train scVI model using existing scVIMethod
         logger.info("Training scVI model for scANVI pretraining")
@@ -354,6 +400,11 @@ class scANVIMethod(BaseIntegrationMethod):
         # Get latent representation
         latent = self.model.get_latent_representation()
         self.adata.obsm[self.embedding_key] = latent
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """Load scANVI model from disk."""
+        check_deps("scvi-tools")
+        self._load_scvi_model(model_path, "scvi.model.SCANVI", **kwargs)
 
     def save_model(self, path: Path) -> Path | None:
         """Save scANVI model and pretrained scVI model."""
@@ -481,16 +532,35 @@ class scPoliMethod(BaseIntegrationMethod):
         self.unlabeled_prototype_training = unlabeled_prototype_training
         self.model = None
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup scPoli-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Handle HVG subsetting (scPoli needs this in multiple places)
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            adata_prepared = self.adata.copy()
+
+        # Store the prepared data for use in both fit() and transform()
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("scPoli data setup completed")
+
     def fit(self):
         """Fit scPoli model."""
         check_deps("scarches")
         from scarches.models.scpoli import scPoli
 
-        # Subset to highly variable genes
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
+        # Ensure data is setup
+        self.setup()
+
+        # Use the prepared data
+        adata_hvg = self.setup_state["adata_prepared"]
 
         # Early stopping configuration
         early_stopping_kwargs = {
@@ -554,15 +624,27 @@ class scPoliMethod(BaseIntegrationMethod):
         if not self.is_fitted or self.model is None:
             raise ValueError("Model must be fitted before transform")
 
-        # Subset to highly variable genes (same as used during training)
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
+        # Use the same prepared data as during training
+        adata_hvg = self.setup_state["adata_prepared"]
 
         # Get latent representation
         latent = self.model.get_latent(adata_hvg, mean=True)
         self.adata.obsm[self.embedding_key] = latent
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """Load scPoli model from disk."""
+        check_deps("scarches")
+        _ = kwargs  # Silence unused parameter warning
+
+        # Setup data first
+        self.setup()
+
+        # scPoli uses different import pattern
+        from scarches.models import scPoli
+
+        self.model = scPoli.load(str(model_path), adata=self.setup_state["adata_prepared"])
+
+        self.is_fitted = True
 
     def save_model(self, path: Path) -> Path | None:
         """Save scPoli model."""
@@ -724,6 +806,25 @@ class ResolVIMethod(BaseIntegrationMethod):
         self.n_neighbors = n_neighbors
         self.model = None
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup ResolVI-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Handle HVG subsetting
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            adata_prepared = self.adata.copy()
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("ResolVI data setup completed")
+
     def fit(self):
         """Fit ResolVI model.
 
@@ -734,14 +835,14 @@ class ResolVIMethod(BaseIntegrationMethod):
         check_deps("scvi-tools")
         import scvi
 
+        # Ensure data is setup
+        self.setup()
+
+        # Use the prepared data
+        adata_hvg = self.setup_state["adata_prepared"]
+
         # Setup ResolVI data registration
         # ResolVI setup_anndata will automatically compute spatial neighbors if missing
-
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
-
         scvi.external.RESOLVI.setup_anndata(
             adata_hvg,
             layer=self.counts_layer,
@@ -807,6 +908,11 @@ class ResolVIMethod(BaseIntegrationMethod):
         # Get latent representation
         latent = self.model.get_latent_representation()
         self.adata.obsm[self.embedding_key] = latent
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """Load ResolVI model from disk."""
+        check_deps("scvi-tools")
+        self._load_scvi_model(model_path, "scvi.external.RESOLVI", **kwargs)
 
     def save_model(self, path: Path) -> Path | None:
         """Save ResolVI model."""
@@ -918,10 +1024,32 @@ class scVIVAMethod(BaseIntegrationMethod):
         self.embedding_model = None
         self.model = None
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup scVIVA-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Handle HVG subsetting
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            adata_prepared = self.adata.copy()
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("scVIVA data setup completed")
+
     def fit(self):
         """Fit scVIVA model with expression embedding computation."""
         check_deps("scvi-tools")
         import scvi
+
+        # Ensure data is set up
+        self.setup()
 
         # Step 1: Compute expression embedding using existing methods
         logger.info("Computing %s expression embedding for scVIVA", self.embedding_method)
@@ -970,10 +1098,8 @@ class scVIVAMethod(BaseIntegrationMethod):
         # Step 2: Run scVIVA preprocessing to compute spatial neighborhoods
         logger.info("Running scVIVA preprocessing")
 
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
+        # Use the prepared data from setup
+        adata_hvg = self.setup_state["adata_prepared"]
 
         # Prepare preprocessing parameters, filtering out None values for k_nn only
         preprocessing_params = {
@@ -1065,3 +1191,11 @@ class scVIVAMethod(BaseIntegrationMethod):
                 logger.info("Saved embedding model to %s", embedding_dir)
 
         return model_dir
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """Load scVIVA model from disk."""
+        check_deps("scvi-tools")
+
+        # Use the scvi helper method for consistency
+        scviva_model_path = model_path / "scviva_model"
+        self._load_scvi_model(scviva_model_path, "scvi.external.SCVIVA", **kwargs)

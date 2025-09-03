@@ -14,6 +14,7 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from scembed.logging import logger
+from scembed.utils import _download_artifact_by_run_id
 
 
 class BaseIntegrationMethod(ABC):
@@ -71,6 +72,7 @@ class BaseIntegrationMethod(ABC):
         self.params = kwargs
         self.is_fitted = False
         self.embedding_key = f"X_{self.name.lower()}"
+        self.model = None  # For methods that have trainable models
 
         # Data keys - configurable for different datasets
         self.batch_key = batch_key
@@ -88,6 +90,12 @@ class BaseIntegrationMethod(ABC):
         if validate_spatial:
             self.validate_spatial_adata(adata_work)
         self.adata = adata_work
+
+        # Setup state
+        self.setup_state = {
+            "is_setup": False,
+            "adata_prepared": None,
+        }
 
         # Setup output directories
         self._temp_dir = None  # Store TemporaryDirectory object to prevent premature deletion
@@ -285,6 +293,131 @@ class BaseIntegrationMethod(ABC):
         """
         self.fit()
         self.transform()
+
+    def setup(self, force_recompute: bool = False) -> None:
+        """
+        Setup data preprocessing for the integration method.
+
+        Prepares the data for method-specific training/inference and stores
+        the result in self.setup_state["adata_prepared"].
+
+        Parameters
+        ----------
+        force_recompute
+            Whether to force recomputation of preprocessing steps.
+        """
+        # Skip if already setup and not forcing recompute
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Default implementation: just use the original data
+        self.setup_state["adata_prepared"] = self.adata.copy()
+        self.setup_state["is_setup"] = True
+
+        logger.info("Data setup completed for %s method", self.name)
+
+    def load_model(self, source: str | Path | dict, **kwargs) -> None:
+        """
+        Load a pre-trained model from various sources.
+
+        Parameters
+        ----------
+        source
+            Source of the model. Can be:
+            - str/Path: Local path to model directory
+            - dict: WandB parameters with keys 'run_id', 'entity', 'project'
+        **kwargs
+            Additional arguments passed to loading functions.
+        """
+        if isinstance(source, dict):
+            # WandB loading
+            self._load_from_wandb(**source, **kwargs)
+        else:
+            # Local path loading
+            self._load_from_disk(Path(source), **kwargs)
+
+    def _load_from_wandb(
+        self,
+        run_id: str,
+        entity: str,
+        project: str,
+        artifact_name: str = "trained_model",
+        **kwargs,
+    ) -> None:
+        """
+        Load model from WandB.
+
+        Parameters
+        ----------
+        run_id
+            WandB run ID.
+        entity
+            WandB entity.
+        project
+            WandB project.
+        artifact_name
+            Name of the artifact to download.
+        **kwargs
+            Additional arguments passed to _load_from_disk.
+        """
+        downloaded_path = _download_artifact_by_run_id(
+            run_id=run_id,
+            entity=entity,
+            project=project,
+            artifact_name=artifact_name,
+            download_dir=self.models_dir,
+        )
+
+        if downloaded_path is None:
+            raise ValueError(f"Could not download artifact '{artifact_name}' from run {run_id}")
+
+        self._load_from_disk(downloaded_path, **kwargs)
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """
+        Load model from local disk.
+
+        Parameters
+        ----------
+        model_path
+            Path to the model directory.
+        **kwargs
+            Additional arguments for model loading.
+
+        Raises
+        ------
+        NotImplementedError
+            If method doesn't support model loading.
+        """
+        raise NotImplementedError
+
+    def _load_scvi_model(self, model_path: Path, model_class_path: str, **kwargs) -> None:
+        """
+        Helper method for loading scVI-tools based models.
+
+        Parameters
+        ----------
+        model_path
+            Path to the model directory.
+        model_class_path
+            Dot-separated path to the model class (e.g., 'scvi.model.SCVI').
+        **kwargs
+            Additional arguments for model loading (unused, for compatibility).
+        """
+        _ = kwargs  # Silence unused parameter warning
+
+        # Setup data first
+        self.setup()
+
+        # Dynamically import the model class
+        module_name, class_name = model_class_path.rsplit(".", 1)
+        module = __import__(module_name, fromlist=[class_name])
+        model_class = getattr(module, class_name)
+
+        # Load model
+        self.model = model_class.load(str(model_path), adata=self.setup_state["adata_prepared"])
+
+        self.is_fitted = True
 
     def save_model(self, path: Path) -> Path | None:
         """
