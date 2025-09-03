@@ -337,10 +337,12 @@ class BaseIntegrationMethod(ABC):
             # WandB loading - download first, then load with appropriate method
             if artifact_type == "model":
                 artifact_name = "trained_model"
+                download_dir = self.models_dir
             else:  # artifact_type == "embedding"
                 artifact_name = "embedding"
+                download_dir = self.embedding_dir
 
-            downloaded_path = self._load_from_wandb(artifact_name=artifact_name, **source)
+            downloaded_path = self._load_from_wandb(artifact_name=artifact_name, download_dir=download_dir, **source)
 
             if downloaded_path is None:
                 raise ValueError(
@@ -365,6 +367,7 @@ class BaseIntegrationMethod(ABC):
         entity: str,
         project: str,
         artifact_name: str = "trained_model",
+        download_dir: Path | None = None,
     ) -> Path:
         """
         Download artifact from WandB and return the path.
@@ -379,18 +382,23 @@ class BaseIntegrationMethod(ABC):
             WandB project.
         artifact_name
             Name of the artifact to download.
+        download_dir
+            Directory to download to. If None, uses models_dir.
 
         Returns
         -------
         Path
             Path to the downloaded artifact.
         """
+        if download_dir is None:
+            download_dir = self.models_dir
+
         downloaded_path = _download_artifact_by_run_id(
             run_id=run_id,
             entity=entity,
             project=project,
             artifact_name=artifact_name,
-            download_dir=self.models_dir,
+            download_dir=download_dir,
         )
 
         if downloaded_path is None:
@@ -423,19 +431,35 @@ class BaseIntegrationMethod(ABC):
         Parameters
         ----------
         embedding_path
-            Path to the embedding file.
+            Path to the embedding file or directory containing embedding files.
         **kwargs
             Additional arguments for embedding loading (unused, for compatibility).
         """
         _ = kwargs  # Silence unused parameter warning
 
+        # If path is a directory (e.g., downloaded WandB artifact), find the embedding file
+        if embedding_path.is_dir():
+            # Look for common embedding file patterns
+            embedding_files = []
+            for pattern in ["*.parquet", "*.pkl.gz", "*.h5"]:
+                embedding_files.extend(embedding_path.glob(pattern))
+
+            if not embedding_files:
+                raise ValueError(f"No embedding files found in directory: {embedding_path}")
+            elif len(embedding_files) > 1:
+                logger.warning("Multiple embedding files found, using the first one: %s", embedding_files[0])
+
+            embedding_file = embedding_files[0]
+        else:
+            embedding_file = embedding_path
+
         # Load embedding using utility function
-        embedding_df = load_embedding(embedding_path)
+        embedding_df = load_embedding(embedding_file)
 
         # Store in adata.obsm
         self.adata.obsm[self.embedding_key] = embedding_df.values
 
-        logger.info("Loaded %s embedding from '%s'", self.name, embedding_path)
+        logger.info("Loaded %s embedding from '%s'", self.name, embedding_file)
 
     def _load_scvi_model(self, model_path: Path, model_class_path: str, **kwargs) -> None:
         """
