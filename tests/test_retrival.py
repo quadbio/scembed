@@ -40,9 +40,29 @@ class TestRetrieval:
                 "wandb_embedding_key": "X_scanvi_wandb",
                 "extra_params": {"scvi_params": {"max_epochs": 3}},
             },
+            {
+                "method_name": "scPoli",
+                "method_class": scembed.methods.scPoliMethod,
+                "embedding_key": "X_scpoli",
+                "wandb_embedding_key": "X_scpoli_wandb",
+                "extra_params": {
+                    "latent_dim": 10,
+                    "pretraining_epochs": 2,
+                    "n_epochs": 3,
+                    "unlabeled_prototype_training": False,
+                },
+            },
+            {
+                "method_name": "ResolVI",
+                "method_class": scembed.methods.ResolVIMethod,
+                "embedding_key": "X_resolvi",
+                "wandb_embedding_key": "X_resolvi_wandb",
+                "extra_params": {"n_latent": 10, "n_neighbors": 10, "spatial_key": "spatial"},
+                "fixture": "spatial_data",
+            },
         ],
     )
-    def test_embedding_retrieval(self, pbmc_data, method_config):
+    def test_embedding_retrieval(self, pbmc_data, spatial_data, method_config):
         """Test retrieval of embeddings from wandb for different methods.
 
         Train model, retrieve embedding, log model + embedding to wandb. Then, retrieve both and compare two different embeddings:
@@ -55,13 +75,20 @@ class TestRetrieval:
         wandb_embedding_key = method_config["wandb_embedding_key"]
         extra_params = method_config["extra_params"]
 
+        # Choose the appropriate fixture based on method requirements
+        fixture_name = method_config.get("fixture", "pbmc_data")
+        if fixture_name == "spatial_data":
+            adata = spatial_data
+        else:
+            adata = pbmc_data
+
         # Step 1: Fit a model, log to wandb
         temp_dir = tempfile.TemporaryDirectory()
         wandb.init(entity="spatial_vi", project="scembed_test_retrival", dir=temp_dir.name)
         run_id = wandb.run.id
 
         # Initialize the method with common params + method-specific params
-        method = method_class(pbmc_data, **MODEL_PARAMS, **extra_params)
+        method = method_class(adata, **MODEL_PARAMS, **extra_params)
         method.fit()
         method.transform()
 
@@ -77,7 +104,7 @@ class TestRetrieval:
         temp_dir.cleanup()
 
         # Step 2: Retrieve artifacts from wandb, get latent space from model
-        method = method_class(pbmc_data, **MODEL_PARAMS, **extra_params)
+        method = method_class(adata, **MODEL_PARAMS, **extra_params)
 
         source = {"entity": "spatial_vi", "project": "scembed_test_retrival", "run_id": run_id}
         method.load_artifact(artifact_type="model", source=source)
