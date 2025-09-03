@@ -1171,6 +1171,4 @@ class scVIVAMethod(BaseIntegrationMethod):
         """Load scVIVA model from disk."""
         check_deps("scvi-tools")
 
-        # Use the scvi helper method for consistency
-        scviva_model_path = model_path / "scviva_model"
-        self._load_scvi_model(scviva_model_path, "scvi.external.SCVIVA", **kwargs)
+        self._load_scvi_model(model_path, "scvi.external.SCVIVA", **kwargs)
