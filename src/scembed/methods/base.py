@@ -504,6 +504,22 @@ class BaseIntegrationMethod(ABC):
         logger.info("Saved %s embedding to '%s'", self.name, file_path)
         return file_path
 
+    def _prepare_adata_for_setup(self) -> ad.AnnData:
+        """
+        Prepare AnnData object with HVG subsetting if needed.
+
+        Returns
+        -------
+        AnnData
+            Prepared data with HVG subsetting applied if use_hvg=True.
+        """
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            return self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            return self.adata.copy()
+
     def _filter_none_params(self, params: dict) -> dict:
         """Filter out None values to allow library defaults."""
         return {k: v for k, v in params.items() if v is not None}

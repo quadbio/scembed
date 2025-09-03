@@ -156,13 +156,8 @@ class scVIMethod(BaseIntegrationMethod):
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
-        # Handle HVG subsetting
-        if self.use_hvg:
-            if self.hvg_key not in self.adata.var.columns:
-                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
-            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_prepared = self.adata.copy()
+        # Use base class helper for HVG subsetting
+        adata_prepared = self._prepare_adata_for_setup()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -322,13 +317,8 @@ class scANVIMethod(BaseIntegrationMethod):
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
-        # scANVI uses the same preprocessing as scVI
-        if self.use_hvg:
-            if self.hvg_key not in self.adata.var.columns:
-                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
-            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_prepared = self.adata.copy()
+        # Use base class helper for HVG subsetting (scANVI uses same preprocessing as scVI)
+        adata_prepared = self._prepare_adata_for_setup()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -537,13 +527,8 @@ class scPoliMethod(BaseIntegrationMethod):
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
-        # Handle HVG subsetting (scPoli needs this in multiple places)
-        if self.use_hvg:
-            if self.hvg_key not in self.adata.var.columns:
-                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
-            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_prepared = self.adata.copy()
+        # Use base class helper for HVG subsetting (scPoli needs this in multiple places)
+        adata_prepared = self._prepare_adata_for_setup()
 
         # Store the prepared data for use in both fit() and transform()
         self.setup_state["adata_prepared"] = adata_prepared
@@ -811,13 +796,8 @@ class ResolVIMethod(BaseIntegrationMethod):
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
-        # Handle HVG subsetting
-        if self.use_hvg:
-            if self.hvg_key not in self.adata.var.columns:
-                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
-            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_prepared = self.adata.copy()
+        # Use base class helper for HVG subsetting
+        adata_prepared = self._prepare_adata_for_setup()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -1029,13 +1009,8 @@ class scVIVAMethod(BaseIntegrationMethod):
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
-        # Handle HVG subsetting
-        if self.use_hvg:
-            if self.hvg_key not in self.adata.var.columns:
-                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
-            adata_prepared = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_prepared = self.adata.copy()
+        # Use base class helper for HVG subsetting
+        adata_prepared = self._prepare_adata_for_setup()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
