@@ -484,12 +484,10 @@ class BaseIntegrationMethod(ABC):
         model_class_path
             Dot-separated path to the model class (e.g., 'scvi.model.SCVI').
         **kwargs
-            Additional arguments for model loading (unused, for compatibility).
+            Additional arguments for model setup
         """
-        _ = kwargs  # Silence unused parameter warning
-
         # Setup data first
-        self.setup()
+        self.setup(**kwargs)
 
         # Dynamically import the model class
         module_name, class_name = model_class_path.rsplit(".", 1)
@@ -586,7 +584,7 @@ class BaseIntegrationMethod(ABC):
         logger.info("Saved %s embedding to '%s'", self.name, file_path)
         return file_path
 
-    def _prepare_adata_for_setup(self) -> ad.AnnData:
+    def _prepare_hvg(self) -> ad.AnnData:
         """
         Prepare AnnData object with HVG subsetting if needed.
 

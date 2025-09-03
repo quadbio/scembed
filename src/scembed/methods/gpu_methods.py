@@ -157,7 +157,7 @@ class scVIMethod(BaseIntegrationMethod):
             return
 
         # Use base class helper for HVG subsetting
-        adata_prepared = self._prepare_adata_for_setup()
+        adata_prepared = self._prepare_hvg()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -218,10 +218,10 @@ class scVIMethod(BaseIntegrationMethod):
         self.model.train(**train_params)
         self.is_fitted = True
 
-    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+    def _load_from_disk(self, model_path: Path) -> None:
         """Load scVI model from disk."""
         check_deps("scvi-tools")
-        self._load_scvi_model(model_path, "scvi.model.SCVI", **kwargs)
+        self._load_scvi_model(model_path, "scvi.model.SCVI")
 
     def transform(self):
         """Get scVI latent representation."""
@@ -318,7 +318,7 @@ class scANVIMethod(BaseIntegrationMethod):
             return
 
         # Use base class helper for HVG subsetting (scANVI uses same preprocessing as scVI)
-        adata_prepared = self._prepare_adata_for_setup()
+        adata_prepared = self._prepare_hvg()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -391,10 +391,10 @@ class scANVIMethod(BaseIntegrationMethod):
         latent = self.model.get_latent_representation()
         self.adata.obsm[self.embedding_key] = latent
 
-    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+    def _load_from_disk(self, model_path: Path) -> None:
         """Load scANVI model from disk."""
         check_deps("scvi-tools")
-        self._load_scvi_model(model_path, "scvi.model.SCANVI", **kwargs)
+        self._load_scvi_model(model_path, "scvi.model.SCANVI")
 
     def save_model(self, path: Path) -> Path | None:
         """Save scANVI model and pretrained scVI model."""
@@ -528,7 +528,7 @@ class scPoliMethod(BaseIntegrationMethod):
             return
 
         # Use base class helper for HVG subsetting (scPoli needs this in multiple places)
-        adata_prepared = self._prepare_adata_for_setup()
+        adata_prepared = self._prepare_hvg()
 
         # Note: scPoli expects raw counts in .X, so we need to copy from layer
         adata_prepared.X = adata_prepared.layers[self.counts_layer].copy()
@@ -616,19 +616,13 @@ class scPoliMethod(BaseIntegrationMethod):
         latent = self.model.get_latent(adata_hvg, mean=True)
         self.adata.obsm[self.embedding_key] = latent
 
-    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+    def _load_from_disk(self, model_path: Path) -> None:
         """Load scPoli model from disk."""
         check_deps("scarches")
-        _ = kwargs  # Silence unused parameter warning
-
-        # Setup data first
-        self.setup()
-
-        # scPoli uses different import pattern
         from scarches.models import scPoli
 
+        self.setup()
         self.model = scPoli.load(str(model_path), adata=self.setup_state["adata_prepared"])
-
         self.is_fitted = True
 
     def save_model(self, path: Path) -> Path | None:
@@ -797,7 +791,7 @@ class ResolVIMethod(BaseIntegrationMethod):
             return
 
         # Use base class helper for HVG subsetting
-        adata_prepared = self._prepare_adata_for_setup()
+        adata_prepared = self._prepare_hvg()
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -889,10 +883,10 @@ class ResolVIMethod(BaseIntegrationMethod):
         latent = self.model.get_latent_representation()
         self.adata.obsm[self.embedding_key] = latent
 
-    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+    def _load_from_disk(self, model_path: Path) -> None:
         """Load ResolVI model from disk."""
         check_deps("scvi-tools")
-        self._load_scvi_model(model_path, "scvi.external.RESOLVI", **kwargs)
+        self._load_scvi_model(model_path, "scvi.external.RESOLVI")
 
     def save_model(self, path: Path) -> Path | None:
         """Save ResolVI model."""
@@ -1004,13 +998,32 @@ class scVIVAMethod(BaseIntegrationMethod):
         self.embedding_model = None
         self.model = None
 
-    def setup(self, force_recompute: bool = False) -> None:
+    def setup(self, expression_embedding_key: str, force_recompute: bool = False) -> None:
         """Setup scVIVA-specific preprocessing."""
+        check_deps("scvi-tools")
+        import scvi
+
         if self.setup_state["is_setup"] and not force_recompute:
             return
 
         # Use base class helper for HVG subsetting
-        adata_prepared = self._prepare_adata_for_setup()
+        adata_prepared = self._prepare_hvg()
+
+        # Prepare preprocessing parameters, filtering out None values for k_nn only
+        preprocessing_params = {
+            "adata": adata_prepared,
+            "sample_key": self.batch_key,
+            "labels_key": self.cell_type_key,
+            "cell_coordinates_key": self.spatial_key,
+            "expression_embedding_key": expression_embedding_key,
+        }
+
+        # Add k_nn only if not None (let scVIVA use its default otherwise)
+        if self.k_nn is not None:
+            preprocessing_params["k_nn"] = self.k_nn
+
+        # Run preprocessing to compute neighborhoods
+        scvi.external.SCVIVA.preprocessing_anndata(**preprocessing_params)
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -1023,18 +1036,12 @@ class scVIVAMethod(BaseIntegrationMethod):
         check_deps("scvi-tools")
         import scvi
 
-        # Ensure data is set up
-        self.setup()
-
         # Step 1: Compute expression embedding using existing methods
         logger.info("Computing %s expression embedding for scVIVA", self.embedding_method)
 
         # Validate embedding method choice
         if self.embedding_method not in ["scvi", "scanvi"]:
             raise ValueError(f"embedding_method must be 'scvi' or 'scanvi', got: {self.embedding_method}")
-
-        # Get the prepared data that scVIVA will actually use
-        adata_hvg = self.setup_state["adata_prepared"]
 
         # Prepare embedding parameters and create embedding model
         if self.embedding_method == "scvi":
@@ -1051,8 +1058,6 @@ class scVIVAMethod(BaseIntegrationMethod):
             self.embedding_model = scVIMethod(self.adata, **embedding_params)
             self.embedding_model.fit_transform()
             expression_embedding_key = "X_scvi"
-            # Transfer embedding to the prepared data that scVIVA will use
-            adata_hvg.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
 
         else:  # embedding_method == "scanvi"
             embedding_params = self.scanvi_params.copy()
@@ -1070,27 +1075,14 @@ class scVIVAMethod(BaseIntegrationMethod):
             self.embedding_model = scANVIMethod(self.adata, **embedding_params)
             self.embedding_model.fit_transform()
             expression_embedding_key = "X_scanvi"
-            # Transfer embedding to the prepared data that scVIVA will use
-            adata_hvg.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
+
+        # Transfer embedding to the prepared data that scVIVA will use
+        self.adata.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
 
         # Step 2: Run scVIVA preprocessing to compute spatial neighborhoods
         logger.info("Running scVIVA preprocessing")
-
-        # Prepare preprocessing parameters, filtering out None values for k_nn only
-        preprocessing_params = {
-            "adata": adata_hvg,
-            "sample_key": self.batch_key,
-            "labels_key": self.cell_type_key,
-            "cell_coordinates_key": self.spatial_key,
-            "expression_embedding_key": expression_embedding_key,
-        }
-
-        # Add k_nn only if not None (let scVIVA use its default otherwise)
-        if self.k_nn is not None:
-            preprocessing_params["k_nn"] = self.k_nn
-
-        # Run preprocessing to compute neighborhoods
-        scvi.external.SCVIVA.preprocessing_anndata(**preprocessing_params)
+        self.setup(expression_embedding_key=expression_embedding_key)
+        adata_hvg = self.setup_state["adata_prepared"]
 
         # Step 3: Setup scVIVA data registration
         scvi.external.SCVIVA.setup_anndata(
@@ -1167,8 +1159,7 @@ class scVIVAMethod(BaseIntegrationMethod):
 
         return model_dir
 
-    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+    def _load_from_disk(self, model_path: Path, expression_embedding_key: str = "scvi") -> None:
         """Load scVIVA model from disk."""
         check_deps("scvi-tools")
-
-        self._load_scvi_model(model_path, "scvi.external.SCVIVA", **kwargs)
+        self._load_scvi_model(model_path, "scvi.external.SCVIVA", expression_embedding_key=expression_embedding_key)

@@ -10,7 +10,7 @@ import scembed
 MODEL_PARAMS = {
     "cell_type_key": "cell_type",
     "batch_key": "batch",
-    "use_hvg": False,
+    "use_hvg": True,
     "max_epochs": 3,
 }
 
@@ -63,6 +63,14 @@ class TestRetrieval:
                     "spatial_key": "spatial",
                     "downsample_counts": False,
                 },
+                "fixture": "spatial_data",
+            },
+            {
+                "method_name": "scVIVA",
+                "method_class": scembed.methods.scVIVAMethod,
+                "embedding_key": "X_scviva",
+                "wandb_embedding_key": "X_scviva_wandb",
+                "extra_params": {"n_latent": 10, "k_nn": 10, "scvi_params": {"max_epochs": 3}},
                 "fixture": "spatial_data",
             },
         ],
