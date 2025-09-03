@@ -14,7 +14,7 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from scembed.logging import logger
-from scembed.utils import _download_artifact_by_run_id
+from scembed.utils import _download_artifact_by_run_id, load_embedding
 
 
 class BaseIntegrationMethod(ABC):
@@ -316,25 +316,36 @@ class BaseIntegrationMethod(ABC):
 
         logger.info("Data setup completed for %s method", self.name)
 
-    def load_model(self, source: str | Path | dict, **kwargs) -> None:
+    def load_artifact(
+        self, source: str | Path | dict, artifact_type: Literal["model", "embedding"] = "model", **kwargs
+    ) -> None:
         """
-        Load a pre-trained model from various sources.
+        Load a pre-trained model or embedding from various sources.
 
         Parameters
         ----------
         source
-            Source of the model. Can be:
-            - str/Path: Local path to model directory
+            Source of the artifact. Can be:
+            - str/Path: Local path to model directory or embedding file
             - dict: WandB parameters with keys 'run_id', 'entity', 'project'
+        artifact_type
+            Type of artifact to load: 'model' or 'embedding'.
         **kwargs
             Additional arguments passed to loading functions.
         """
         if isinstance(source, dict):
             # WandB loading
-            self._load_from_wandb(**source, **kwargs)
+            if artifact_type == "model":
+                artifact_name = "trained_model"
+            else:  # artifact_type == "embedding"
+                artifact_name = "embedding"
+            self._load_from_wandb(artifact_name=artifact_name, **source, **kwargs)
         else:
             # Local path loading
-            self._load_from_disk(Path(source), **kwargs)
+            if artifact_type == "model":
+                self._load_from_disk(Path(source), **kwargs)
+            else:  # artifact_type == "embedding"
+                self._load_embedding_from_disk(Path(source), **kwargs)
 
     def _load_from_wandb(
         self,
@@ -390,6 +401,27 @@ class BaseIntegrationMethod(ABC):
             If method doesn't support model loading.
         """
         raise NotImplementedError
+
+    def _load_embedding_from_disk(self, embedding_path: Path, **kwargs) -> None:
+        """
+        Load embedding from local disk.
+
+        Parameters
+        ----------
+        embedding_path
+            Path to the embedding file.
+        **kwargs
+            Additional arguments for embedding loading (unused, for compatibility).
+        """
+        _ = kwargs  # Silence unused parameter warning
+
+        # Load embedding using utility function
+        embedding_df = load_embedding(embedding_path)
+
+        # Store in adata.obsm
+        self.adata.obsm[self.embedding_key] = embedding_df.values
+
+        logger.info("Loaded %s embedding from '%s'", self.name, embedding_path)
 
     def _load_scvi_model(self, model_path: Path, model_class_path: str, **kwargs) -> None:
         """
