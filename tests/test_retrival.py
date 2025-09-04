@@ -87,6 +87,7 @@ class TestRetrieval:
         1. The embedding retrieved from wandb.
         2. An embedding obtained by getting the latent space from the fitted model.
         """
+        pytest.importorskip("scarches")  # has an issue with AnnData >=0.12
         method_name = method_config["method_name"]
         method_class = method_config["method_class"]
         embedding_key = method_config["embedding_key"]
