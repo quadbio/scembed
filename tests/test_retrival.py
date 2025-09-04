@@ -70,7 +70,12 @@ class TestRetrieval:
                 "method_class": scembed.methods.scVIVAMethod,
                 "embedding_key": "X_scviva",
                 "wandb_embedding_key": "X_scviva_wandb",
-                "extra_params": {"n_latent": 10, "k_nn": 10, "scvi_params": {"max_epochs": 3}},
+                "extra_params": {
+                    "n_latent": 10,
+                    "k_nn": 10,
+                    "embedding_method": "scvi",
+                    "scvi_params": {"max_epochs": 3},
+                },
                 "fixture": "spatial_data",
             },
         ],
@@ -101,14 +106,14 @@ class TestRetrieval:
         run_id = wandb.run.id
 
         # Initialize the method with common params + method-specific params
-        method = method_class(adata, **MODEL_PARAMS, **extra_params)
-        method.fit()
-        method.transform()
+        method_original = method_class(adata, **MODEL_PARAMS, **extra_params)
+        method_original.fit()
+        method_original.transform()
 
-        model_path = method.save_model(method.models_dir)
+        model_path = method_original.save_model(method_original.models_dir)
         wandb.log_model(str(model_path), name="trained_model")
 
-        emb_path = method.save_embedding(format_type="parquet")
+        emb_path = method_original.save_embedding(format_type="parquet")
         artifact = wandb.Artifact("embedding", type="dataset")
         artifact.add_file(str(emb_path))
         wandb.log_artifact(artifact)
@@ -117,15 +122,22 @@ class TestRetrieval:
         temp_dir.cleanup()
 
         # Step 2: Retrieve artifacts from wandb, get latent space from model
-        method = method_class(adata, **MODEL_PARAMS, **extra_params)
+        method_wandb = method_class(adata, **MODEL_PARAMS, **extra_params)
+
+        # We need to provide the original scVI embedding for scVIVA
+        if method_name == "scVIVA":
+            expression_embedding_key = "X_scvi"
+            method_wandb.adata.obsm[expression_embedding_key] = method_original.embedding_model.adata.obsm[
+                expression_embedding_key
+            ]
 
         source = {"entity": "spatial_vi", "project": "scembed_test_retrival", "run_id": run_id}
-        method.load_artifact(artifact_type="model", source=source)
-        method.load_artifact(artifact_type="embedding", source=source, embedding_key=wandb_embedding_key)
+        method_wandb.load_artifact(artifact_type="model", source=source)
+        method_wandb.load_artifact(artifact_type="embedding", source=source, embedding_key=wandb_embedding_key)
 
-        method.transform()
+        method_wandb.transform()
 
         # Step 3: make sure the two embeddings are now identical
-        assert np.array_equal(method.adata.obsm[wandb_embedding_key], method.adata.obsm[embedding_key]), (
+        assert np.array_equal(method_wandb.adata.obsm[embedding_key], method_wandb.adata.obsm[wandb_embedding_key]), (
             f"Embeddings are not equal for {method_name}"
         )

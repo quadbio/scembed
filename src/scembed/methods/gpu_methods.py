@@ -1159,7 +1159,10 @@ class scVIVAMethod(BaseIntegrationMethod):
 
         return model_dir
 
-    def _load_from_disk(self, model_path: Path, expression_embedding_key: str = "scvi") -> None:
+    def _load_from_disk(self, model_path: Path, expression_embedding_key: str = "X_scvi") -> None:
         """Load scVIVA model from disk."""
         check_deps("scvi-tools")
+        if expression_embedding_key not in self.adata.obsm:
+            raise ValueError(f"Expression embedding '{expression_embedding_key}' not found in adata.obsm")
+
         self._load_scvi_model(model_path, "scvi.external.SCVIVA", expression_embedding_key=expression_embedding_key)
