@@ -11,7 +11,9 @@ MODEL_PARAMS = {
     "cell_type_key": "cell_type",
     "batch_key": "batch",
     "use_hvg": True,
-    "max_epochs": 3,
+    "max_epochs": 1,
+    "spatial_key": "spatial",
+    "counts_layer": "counts",
 }
 
 
@@ -31,14 +33,17 @@ class TestRetrieval:
                 "method_class": scembed.methods.scVIMethod,
                 "embedding_key": "X_scvi",
                 "wandb_embedding_key": "X_scvi_wandb",
-                "extra_params": {},
+                "extra_params": {
+                    "n_latent": 5,
+                    "n_hidden": 32,
+                },
             },
             {
                 "method_name": "scANVI",
                 "method_class": scembed.methods.scANVIMethod,
                 "embedding_key": "X_scanvi",
                 "wandb_embedding_key": "X_scanvi_wandb",
-                "extra_params": {"scvi_params": {"max_epochs": 3}},
+                "extra_params": {"scvi_params": {"max_epochs": 1, "n_latent": 5, "n_hidden": 32}},
             },
             {
                 "method_name": "scPoli",
@@ -46,9 +51,10 @@ class TestRetrieval:
                 "embedding_key": "X_scpoli",
                 "wandb_embedding_key": "X_scpoli_wandb",
                 "extra_params": {
-                    "latent_dim": 10,
-                    "pretraining_epochs": 2,
-                    "n_epochs": 3,
+                    "latent_dim": 5,
+                    "hidden_layer_sizes": [32],
+                    "pretraining_epochs": 1,
+                    "n_epochs": 2,
                     "unlabeled_prototype_training": False,
                 },
             },
@@ -58,9 +64,9 @@ class TestRetrieval:
                 "embedding_key": "X_resolvi",
                 "wandb_embedding_key": "X_resolvi_wandb",
                 "extra_params": {
-                    "n_latent": 10,
+                    "n_latent": 5,
+                    "n_hidden": 32,
                     "n_neighbors": 10,
-                    "spatial_key": "spatial",
                     "downsample_counts": False,
                 },
                 "fixture": "spatial_data",
@@ -71,10 +77,10 @@ class TestRetrieval:
                 "embedding_key": "X_scviva",
                 "wandb_embedding_key": "X_scviva_wandb",
                 "extra_params": {
-                    "n_latent": 10,
+                    "n_latent": 5,
                     "k_nn": 10,
                     "embedding_method": "scvi",
-                    "scvi_params": {"max_epochs": 3},
+                    "scvi_params": {"max_epochs": 1, "n_latent": 5, "n_hidden": 32},
                 },
                 "fixture": "spatial_data",
             },

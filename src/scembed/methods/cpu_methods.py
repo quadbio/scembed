@@ -168,7 +168,7 @@ class LIGERMethod(BaseIntegrationMethod):
         self.adata.X = self.adata.layers[self.counts_layer].copy()
 
         # Use base class helper for HVG subsetting
-        adata_hvg = self._prepare_adata_for_setup()
+        adata_hvg = self._prepare_hvg()
 
         # Split by batch for LIGER
         batch_cats = adata_hvg.obs[self.batch_key].cat.categories
@@ -465,7 +465,7 @@ class ScanoramaMethod(BaseIntegrationMethod):
             return
 
         # Use base class helper for HVG subsetting
-        adata_hvg = self._prepare_adata_for_setup()
+        adata_hvg = self._prepare_hvg()
 
         # Split by batch
         batch_cats = adata_hvg.obs[self.batch_key].cat.categories
