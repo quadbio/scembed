@@ -50,6 +50,7 @@ class TestRetrieval:
                 "method_class": scembed.methods.scPoliMethod,
                 "embedding_key": "X_scpoli",
                 "wandb_embedding_key": "X_scpoli_wandb",
+                "requires_scarches": True,
                 "extra_params": {
                     "latent_dim": 5,
                     "hidden_layer_sizes": [32],
@@ -93,7 +94,10 @@ class TestRetrieval:
         1. The embedding retrieved from wandb.
         2. An embedding obtained by getting the latent space from the fitted model.
         """
-        pytest.importorskip("scarches")  # has an issue with AnnData >=0.12
+        # Skip test if method requires scarches but it's not available
+        if method_config.get("requires_scarches", False):
+            pytest.importorskip("scarches")  # has an issue with AnnData >=0.12
+
         method_name = method_config["method_name"]
         method_class = method_config["method_class"]
         embedding_key = method_config["embedding_key"]
