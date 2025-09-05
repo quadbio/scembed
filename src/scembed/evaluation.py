@@ -209,6 +209,7 @@ class IntegrationEvaluator:
         key_added: str = "X_umap",
         use_rapids: bool = False,
         additional_colors: str | list[str] | None = None,
+        n_neighbors: int = 15,
         **kwargs: Any,
     ) -> None:
         """
@@ -222,6 +223,8 @@ class IntegrationEvaluator:
             Whether to use rapids_singlecell for acceleration.
         additional_colors
             Additional keys in .obs for coloring the UMAP plot. By default, we color in cell type and batch information.
+        n_neighbors
+            Number of neighbors used for k-NN computation
         kwargs
             Additional keyword arguments for scanpy.pp.embedding
         """
@@ -233,7 +236,7 @@ class IntegrationEvaluator:
                 import rapids_singlecell as rsc
 
                 # Compute UMAP with RAPIDS
-                rsc.pp.neighbors(self.adata, use_rep=self.embedding_key, n_neighbors=15)
+                rsc.pp.neighbors(self.adata, use_rep=self.embedding_key, n_neighbors=n_neighbors)
                 rsc.tl.umap(self.adata, key_added=key_added)
             except RuntimeError:
                 logger.info("RAPIDS not available, falling back to scanpy")
@@ -241,7 +244,7 @@ class IntegrationEvaluator:
 
         if not use_rapids:
             # Compute UMAP with scanpy
-            sc.pp.neighbors(self.adata, use_rep=self.embedding_key, n_neighbors=15)
+            sc.pp.neighbors(self.adata, use_rep=self.embedding_key, n_neighbors=n_neighbors)
             sc.tl.umap(self.adata, key_added=key_added)
 
         # Plot embeddings

@@ -14,6 +14,7 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from scembed.logging import logger
+from scembed.utils import _download_artifact_by_run_id, load_embedding
 
 
 class BaseIntegrationMethod(ABC):
@@ -71,6 +72,7 @@ class BaseIntegrationMethod(ABC):
         self.params = kwargs
         self.is_fitted = False
         self.embedding_key = f"X_{self.name.lower()}"
+        self.model = None  # For methods that have trainable models
 
         # Data keys - configurable for different datasets
         self.batch_key = batch_key
@@ -88,6 +90,12 @@ class BaseIntegrationMethod(ABC):
         if validate_spatial:
             self.validate_spatial_adata(adata_work)
         self.adata = adata_work
+
+        # Setup state
+        self.setup_state = {
+            "is_setup": False,
+            "adata_prepared": None,
+        }
 
         # Setup output directories
         self._temp_dir = None  # Store TemporaryDirectory object to prevent premature deletion
@@ -286,6 +294,211 @@ class BaseIntegrationMethod(ABC):
         self.fit()
         self.transform()
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """
+        Setup data preprocessing for the integration method.
+
+        Prepares the data for method-specific training/inference and stores
+        the result in self.setup_state["adata_prepared"].
+
+        Parameters
+        ----------
+        force_recompute
+            Whether to force recomputation of preprocessing steps.
+        """
+        # Skip if already setup and not forcing recompute
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Default implementation: just use the original data
+        self.setup_state["adata_prepared"] = self.adata.copy()
+        self.setup_state["is_setup"] = True
+
+        logger.info("Data setup completed for %s method", self.name)
+
+    def load_artifact(
+        self,
+        source: str | Path | dict,
+        artifact_type: Literal["model", "embedding"] = "model",
+        embedding_key: str | None = None,
+        **kwargs,
+    ) -> None:
+        """
+        Load a pre-trained model or embedding from various sources.
+
+        Parameters
+        ----------
+        source
+            Source of the artifact. Can be:
+            - str/Path: Local path to model directory or embedding file
+            - dict: WandB parameters with keys 'run_id', 'entity', 'project'
+        artifact_type
+            Type of artifact to load: 'model' or 'embedding'.
+        embedding_key
+            Key to store embedding in adata.obsm. If None, uses self.embedding_key.
+            Only used when artifact_type='embedding'.
+        **kwargs
+            Additional arguments passed to loading functions.
+        """
+        if isinstance(source, dict):
+            # WandB loading - download first, then load with appropriate method
+            if artifact_type == "model":
+                artifact_name = "trained_model"
+                download_dir = self.models_dir
+            else:  # artifact_type == "embedding"
+                artifact_name = "embedding"
+                download_dir = self.embedding_dir
+
+            downloaded_path = self._load_from_wandb(artifact_name=artifact_name, download_dir=download_dir, **source)
+
+            if downloaded_path is None:
+                raise ValueError(
+                    f"Could not download artifact '{artifact_name}' from run {source.get('run_id', 'unknown')}"
+                )
+
+            # Call appropriate loading method based on artifact type
+            if artifact_type == "model":
+                self._load_from_disk(downloaded_path, **kwargs)
+            else:  # artifact_type == "embedding"
+                self._load_embedding_from_disk(downloaded_path, embedding_key=embedding_key, **kwargs)
+        else:
+            # Local path loading
+            if artifact_type == "model":
+                self._load_from_disk(Path(source), **kwargs)
+            else:  # artifact_type == "embedding"
+                self._load_embedding_from_disk(Path(source), embedding_key=embedding_key, **kwargs)
+
+    def _load_from_wandb(
+        self,
+        run_id: str,
+        entity: str,
+        project: str,
+        artifact_name: str = "trained_model",
+        download_dir: Path | None = None,
+    ) -> Path:
+        """
+        Download artifact from WandB and return the path.
+
+        Parameters
+        ----------
+        run_id
+            WandB run ID.
+        entity
+            WandB entity.
+        project
+            WandB project.
+        artifact_name
+            Name of the artifact to download.
+        download_dir
+            Directory to download to. If None, uses models_dir.
+
+        Returns
+        -------
+        Path
+            Path to the downloaded artifact.
+        """
+        if download_dir is None:
+            download_dir = self.models_dir
+
+        downloaded_path = _download_artifact_by_run_id(
+            run_id=run_id,
+            entity=entity,
+            project=project,
+            artifact_name=artifact_name,
+            download_dir=download_dir,
+        )
+
+        if downloaded_path is None:
+            raise ValueError(f"Could not download artifact '{artifact_name}' from run {run_id}")
+
+        return downloaded_path
+
+    def _load_from_disk(self, model_path: Path, **kwargs) -> None:
+        """
+        Load model from local disk.
+
+        Parameters
+        ----------
+        model_path
+            Path to the model directory.
+        **kwargs
+            Additional arguments for model loading.
+
+        Raises
+        ------
+        NotImplementedError
+            If method doesn't support model loading.
+        """
+        raise NotImplementedError
+
+    def _load_embedding_from_disk(self, embedding_path: Path, embedding_key: str | None = None, **kwargs) -> None:
+        """
+        Load embedding from local disk.
+
+        Parameters
+        ----------
+        embedding_path
+            Path to the embedding file or directory containing embedding files.
+        embedding_key
+            Key to store embedding in adata.obsm. If None, uses self.embedding_key.
+        **kwargs
+            Additional arguments for embedding loading (unused, for compatibility).
+        """
+        _ = kwargs  # Silence unused parameter warning
+
+        # Use provided embedding key or default to method's embedding key
+        target_key = embedding_key if embedding_key is not None else self.embedding_key
+
+        # If path is a directory (e.g., downloaded WandB artifact), find the embedding file
+        if embedding_path.is_dir():
+            # Look for common embedding file patterns
+            embedding_files = []
+            for pattern in ["*.parquet", "*.pkl.gz", "*.h5"]:
+                embedding_files.extend(embedding_path.glob(pattern))
+
+            if not embedding_files:
+                raise ValueError(f"No embedding files found in directory: {embedding_path}")
+            elif len(embedding_files) > 1:
+                logger.warning("Multiple embedding files found, using the first one: %s", embedding_files[0])
+
+            embedding_file = embedding_files[0]
+        else:
+            embedding_file = embedding_path
+
+        # Load embedding using utility function
+        embedding_df = load_embedding(embedding_file)
+
+        # Store in adata.obsm
+        self.adata.obsm[target_key] = embedding_df.values
+
+        logger.info("Loaded %s embedding from '%s' into key '%s'", self.name, embedding_file, target_key)
+
+    def _load_scvi_model(self, model_path: Path, model_class_path: str, **kwargs) -> None:
+        """
+        Helper method for loading scVI-tools based models.
+
+        Parameters
+        ----------
+        model_path
+            Path to the model directory.
+        model_class_path
+            Dot-separated path to the model class (e.g., 'scvi.model.SCVI').
+        **kwargs
+            Additional arguments for model setup
+        """
+        # Setup data first
+        self.setup(**kwargs)
+
+        # Dynamically import the model class
+        module_name, class_name = model_class_path.rsplit(".", 1)
+        module = __import__(module_name, fromlist=[class_name])
+        model_class = getattr(module, class_name)
+
+        # Load model
+        self.model = model_class.load(str(model_path), adata=self.setup_state["adata_prepared"])
+
+        self.is_fitted = True
+
     def save_model(self, path: Path) -> Path | None:
         """
         Save the trained model (for deep learning methods).
@@ -370,6 +583,22 @@ class BaseIntegrationMethod(ABC):
 
         logger.info("Saved %s embedding to '%s'", self.name, file_path)
         return file_path
+
+    def _prepare_hvg(self) -> ad.AnnData:
+        """
+        Prepare AnnData object with HVG subsetting if needed.
+
+        Returns
+        -------
+        AnnData
+            Prepared data with HVG subsetting applied if use_hvg=True.
+        """
+        if self.use_hvg:
+            if self.hvg_key not in self.adata.var.columns:
+                raise ValueError(f"HVG key '{self.hvg_key}' not found but use_hvg=True")
+            return self.adata[:, self.adata.var[self.hvg_key]].copy()
+        else:
+            return self.adata.copy()
 
     def _filter_none_params(self, params: dict) -> dict:
         """Filter out None values to allow library defaults."""

@@ -129,15 +129,22 @@ def _download_artifact_by_run_id(
     run = api.run(f"{entity}/{project}/{run_id}")
 
     # Find the artifact
-    artifacts = [artifact for artifact in run.logged_artifacts() if artifact_name in artifact.name]
+    artifacts = {artifact.name: artifact for artifact in run.logged_artifacts() if artifact_name in artifact.name}
     if not artifacts:
-        logger.debug("No artifact with name '%s' found for run %s", artifact_name, run_id)
+        logger.debug("No artifact with name '%s' found for run '%s'", artifact_name, run_id)
         return None
 
     # Download the artifact
-    artifact = artifacts[0]
-    artifact_dir = artifact.download(root=download_dir)
-    logger.debug("Downloaded %s from run %s to: %s", artifact_name, run_id, artifact_dir)
+    if len(artifacts) > 1:
+        logger.warning(
+            "Found more than one artifacts containing '%s' for run '%s'. Using the first one.", artifact_name, run_id
+        )
+
+    current_name, current_artifact = next(iter(artifacts.items()))
+    # Create subdirectory for this specific artifact
+    artifact_specific_dir = download_dir / current_name
+    artifact_dir = current_artifact.download(root=artifact_specific_dir)
+    logger.debug("Downloaded '%s' from run '%s' to: '%s'", current_name, run_id, artifact_dir)
     return Path(artifact_dir)
 
 
