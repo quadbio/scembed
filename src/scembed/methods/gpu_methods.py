@@ -922,6 +922,8 @@ class scVIVAMethod(BaseIntegrationMethod):
         lr: float | None = None,
         accelerator: str | None = None,
         batch_size: int | None = None,
+        gene_likelihood: str | None = None,
+        check_val_every_n_epoch: int | None = None,
         **kwargs,
     ):
         """
@@ -959,6 +961,10 @@ class scVIVAMethod(BaseIntegrationMethod):
             Accelerator type for training.
         batch_size
             Batch size for training.
+        gene_likelihood
+            Likelihood, nb, zinb or poisson, see scvi docs.
+        check_val_every_n_epoch
+            Check validation loss every n epochs.
         """
         super().__init__(
             adata,
@@ -976,6 +982,8 @@ class scVIVAMethod(BaseIntegrationMethod):
             lr=lr,
             accelerator=accelerator,
             batch_size=batch_size,
+            gene_likelihood=gene_likelihood,
+            check_val_every_n_epoch=check_val_every_n_epoch,
             **kwargs,
         )
 
@@ -993,6 +1001,8 @@ class scVIVAMethod(BaseIntegrationMethod):
         self.lr = lr
         self.accelerator = accelerator
         self.batch_size = batch_size
+        self.gene_likelihood = gene_likelihood
+        self.check_val_every_n_epoch = check_val_every_n_epoch
 
         # Initialize models
         self.embedding_model = None
@@ -1105,6 +1115,7 @@ class scVIVAMethod(BaseIntegrationMethod):
                 "n_hidden": self.n_hidden,
                 "n_layers": self.n_layers,
                 "dropout_rate": self.dropout_rate,
+                "gene_likelihood": self.gene_likelihood,
             }
         )
 
@@ -1118,6 +1129,7 @@ class scVIVAMethod(BaseIntegrationMethod):
                 "early_stopping": self.early_stopping,
                 "accelerator": self.accelerator,
                 "batch_size": self.batch_size,
+                "check_val_every_n_epoch": self.check_val_every_n_epoch,
             }
         )
 
