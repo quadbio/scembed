@@ -159,23 +159,16 @@ class LIGERMethod(BaseIntegrationMethod):
         self.knn_k = knn_k
         self.use_ann = use_ann
 
-    def fit(self):
-        """Fit LIGER - no explicit fitting needed."""
-        self.is_fitted = True
-
-    def transform(self):
-        """Apply LIGER integration."""
-        check_deps("pyliger")
-        import pyliger
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup LIGER-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
 
         # Setup raw counts for LIGER
         self.adata.X = self.adata.layers[self.counts_layer].copy()
 
-        # Use HVG subset
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
+        # Use base class helper for HVG subsetting
+        adata_hvg = self._prepare_hvg()
 
         # Split by batch for LIGER
         batch_cats = adata_hvg.obs[self.batch_key].cat.categories
@@ -184,6 +177,30 @@ class LIGERMethod(BaseIntegrationMethod):
         for i, ad in enumerate(adata_list):
             ad.uns["sample_name"] = batch_cats[i]
             ad.uns["var_gene_idx"] = np.arange(adata_hvg.n_vars)
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_hvg
+        self.setup_state["adata_list"] = adata_list
+        self.setup_state["batch_cats"] = batch_cats
+        self.setup_state["is_setup"] = True
+
+        logger.info("LIGER data setup completed")
+
+    def fit(self):
+        """Fit LIGER - no explicit fitting needed."""
+        # Ensure data is setup
+        self.setup()
+        self.is_fitted = True
+
+    def transform(self):
+        """Apply LIGER integration."""
+        check_deps("pyliger")
+        import pyliger
+
+        # Use the prepared data from setup
+        adata_list = self.setup_state["adata_list"]
+        adata_hvg = self.setup_state["adata_prepared"]
+        batch_cats = self.setup_state["batch_cats"]
 
         # Run LIGER preprocessing
         liger_data = pyliger.create_liger(adata_list, remove_missing=False, make_sparse=False)
@@ -442,8 +459,30 @@ class ScanoramaMethod(BaseIntegrationMethod):
         self.sketch_method = sketch_method
         self.sketch_max = sketch_max
 
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup Scanorama-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        # Use base class helper for HVG subsetting
+        adata_hvg = self._prepare_hvg()
+
+        # Split by batch
+        batch_cats = adata_hvg.obs[self.batch_key].cat.categories
+        adata_list = [adata_hvg[adata_hvg.obs[self.batch_key] == b].copy() for b in batch_cats]
+
+        # Store the prepared data
+        self.setup_state["adata_prepared"] = adata_hvg
+        self.setup_state["adata_list"] = adata_list
+        self.setup_state["batch_cats"] = batch_cats
+        self.setup_state["is_setup"] = True
+
+        logger.info("Scanorama data setup completed")
+
     def fit(self):
         """Fit Scanorama - no explicit fitting needed."""
+        # Ensure data is setup
+        self.setup()
         self.is_fitted = True
 
     def transform(self):
@@ -451,15 +490,9 @@ class ScanoramaMethod(BaseIntegrationMethod):
         check_deps("scanorama")
         import scanorama
 
-        # Use HVG subset
-        if self.use_hvg:
-            adata_hvg = self.adata[:, self.adata.var[self.hvg_key]].copy()
-        else:
-            adata_hvg = self.adata.copy()
-
-        # Split by batch
-        batch_cats = adata_hvg.obs[self.batch_key].cat.categories
-        adata_list = [adata_hvg[adata_hvg.obs[self.batch_key] == b].copy() for b in batch_cats]
+        # Use the prepared data from setup
+        adata_list = self.setup_state["adata_list"]
+        batch_cats = self.setup_state["batch_cats"]
 
         # Prepare parameters, filtering None values to use library defaults
         scanorama_params = self._filter_none_params(

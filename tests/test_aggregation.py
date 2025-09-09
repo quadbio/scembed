@@ -92,7 +92,10 @@ class TestscIBAggregator:
         assert isinstance(configs_df, pd.DataFrame)
 
         for method in configs_df.index:
-            method_dir = self.agg.output_dir / method
+            row = configs_df.loc[method]
+            run_id = row["run_id"]
+            # Method directories are created with format {method}_{run_id}
+            method_dir = self.agg.output_dir / f"{method}_{run_id}"
             assert method_dir.exists()
 
             # Check subdirectories exist
