@@ -910,6 +910,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         self,
         adata,
         embedding_method: str = "scvi",
+        expression_embedding_key: str | None = None,
         scvi_params: dict | None = None,
         scanvi_params: dict | None = None,
         k_nn: int | None = None,
@@ -937,6 +938,10 @@ class scVIVAMethod(BaseIntegrationMethod):
             Annotated data object to integrate. Must contain spatial coordinates and cell type labels.
         embedding_method
             Method to compute expression embeddings. Options: "scvi", "scanvi". Default is "scvi".
+            Ignored if expression_embedding_key is provided.
+        expression_embedding_key
+            Key in adata.obsm containing pre-computed expression embeddings. If provided, skips
+            expression embedding computation and uses the existing embeddings directly.
         scvi_params
             Parameters to pass to the scVI embedding method. If None, uses method defaults.
         scanvi_params
@@ -989,6 +994,7 @@ class scVIVAMethod(BaseIntegrationMethod):
 
         # Store scVIVA-specific parameters
         self.embedding_method = embedding_method
+        self.expression_embedding_key = expression_embedding_key
         self.scvi_params = scvi_params or {}
         self.scanvi_params = scanvi_params or {}
         self.k_nn = k_nn
@@ -1042,52 +1048,63 @@ class scVIVAMethod(BaseIntegrationMethod):
         logger.info("scVIVA data setup completed")
 
     def fit(self):
-        """Fit scVIVA model with expression embedding computation."""
+        """Fit scVIVA model with expression embedding computation or using pre-computed embeddings."""
         check_deps("scvi-tools")
         import scvi
 
-        # Step 1: Compute expression embedding using existing methods
-        logger.info("Computing %s expression embedding for scVIVA", self.embedding_method)
+        # Step 1: Handle expression embeddings - either compute or use pre-computed
+        if self.expression_embedding_key is not None:
+            # Use pre-computed embeddings
+            if self.expression_embedding_key not in self.adata.obsm:
+                raise ValueError(
+                    f"Pre-computed embedding '{self.expression_embedding_key}' not found in adata.obsm. "
+                    f"Available keys: {list(self.adata.obsm.keys())}"
+                )
+            logger.info("Using pre-computed expression embedding: %s", self.expression_embedding_key)
+            expression_embedding_key = self.expression_embedding_key
+        else:
+            # Compute expression embedding using existing methods
+            logger.info("Computing %s expression embedding for scVIVA", self.embedding_method)
 
-        # Validate embedding method choice
-        if self.embedding_method not in ["scvi", "scanvi"]:
-            raise ValueError(f"embedding_method must be 'scvi' or 'scanvi', got: {self.embedding_method}")
+            # Validate embedding method choice
+            if self.embedding_method not in ["scvi", "scanvi"]:
+                raise ValueError(f"embedding_method must be 'scvi' or 'scanvi', got: {self.embedding_method}")
 
-        # Prepare embedding parameters and create embedding model
-        if self.embedding_method == "scvi":
-            embedding_params = self.scvi_params.copy()
-            embedding_params.update(
-                {
-                    "batch_key": self.batch_key,
-                    "cell_type_key": self.cell_type_key,
-                    "hvg_key": self.hvg_key,
-                    "use_hvg": self.use_hvg,
-                    "counts_layer": self.counts_layer,
-                }
-            )
-            self.embedding_model = scVIMethod(self.adata, **embedding_params)
-            self.embedding_model.fit_transform()
-            expression_embedding_key = "X_scvi"
+            # Prepare embedding parameters and create embedding model
+            if self.embedding_method == "scvi":
+                embedding_params = self.scvi_params.copy()
+                embedding_params.update(
+                    {
+                        "batch_key": self.batch_key,
+                        "cell_type_key": self.cell_type_key,
+                        "hvg_key": self.hvg_key,
+                        "use_hvg": self.use_hvg,
+                        "counts_layer": self.counts_layer,
+                    }
+                )
+                self.embedding_model = scVIMethod(self.adata, **embedding_params)
+                self.embedding_model.fit_transform()
+                expression_embedding_key = "X_scvi"
 
-        else:  # embedding_method == "scanvi"
-            embedding_params = self.scanvi_params.copy()
-            embedding_params.update(
-                {
-                    "batch_key": self.batch_key,
-                    "cell_type_key": self.cell_type_key,
-                    "hvg_key": self.hvg_key,
-                    "use_hvg": self.use_hvg,
-                    "counts_layer": self.counts_layer,
-                    "unlabeled_category": self.unlabeled_category,
-                    "scvi_params": self.scvi_params,
-                }
-            )
-            self.embedding_model = scANVIMethod(self.adata, **embedding_params)
-            self.embedding_model.fit_transform()
-            expression_embedding_key = "X_scanvi"
+            else:  # embedding_method == "scanvi"
+                embedding_params = self.scanvi_params.copy()
+                embedding_params.update(
+                    {
+                        "batch_key": self.batch_key,
+                        "cell_type_key": self.cell_type_key,
+                        "hvg_key": self.hvg_key,
+                        "use_hvg": self.use_hvg,
+                        "counts_layer": self.counts_layer,
+                        "unlabeled_category": self.unlabeled_category,
+                        "scvi_params": self.scvi_params,
+                    }
+                )
+                self.embedding_model = scANVIMethod(self.adata, **embedding_params)
+                self.embedding_model.fit_transform()
+                expression_embedding_key = "X_scanvi"
 
-        # Transfer embedding to the prepared data that scVIVA will use
-        self.adata.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
+            # Transfer embedding to adata if it was computed
+            self.adata.obsm[expression_embedding_key] = self.embedding_model.adata.obsm[expression_embedding_key]
 
         # Step 2: Run scVIVA preprocessing to compute spatial neighborhoods
         logger.info("Running scVIVA preprocessing")
@@ -1171,10 +1188,21 @@ class scVIVAMethod(BaseIntegrationMethod):
 
         return model_dir
 
-    def _load_from_disk(self, model_path: Path, expression_embedding_key: str = "X_scvi") -> None:
+    def _load_from_disk(self, model_path: Path) -> None:
         """Load scVIVA model from disk."""
         check_deps("scvi-tools")
+
+        # Determine which expression embedding key to use
+        if self.expression_embedding_key is not None:
+            expression_embedding_key = self.expression_embedding_key
+        else:
+            # Use default based on embedding method
+            expression_embedding_key = "X_scvi" if self.embedding_method == "scvi" else "X_scanvi"
+
         if expression_embedding_key not in self.adata.obsm:
-            raise ValueError(f"Expression embedding '{expression_embedding_key}' not found in adata.obsm")
+            raise ValueError(
+                f"Expression embedding '{expression_embedding_key}' not found in adata.obsm. "
+                f"Available keys: {list(self.adata.obsm.keys())}"
+            )
 
         self._load_scvi_model(model_path, "scvi.external.SCVIVA", expression_embedding_key=expression_embedding_key)
