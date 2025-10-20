@@ -96,8 +96,16 @@ class scIBAggregator:
             run_data = {
                 "run_id": run.id,
                 "name": run.name,
-                **dict(run.summary),
             }
+
+            # Handle run.summary - can be dict-like or string in case of errors
+            try:
+                run_data.update(dict(run.summary))
+            except (AttributeError, TypeError):
+                # Skip runs with invalid summary data
+                logger.warning("Skipping run %s due to invalid summary data", run.id)
+                continue
+
             if "config" not in run.config.keys():
                 run_data["config"] = run.config
             else:
