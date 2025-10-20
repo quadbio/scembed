@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 optional-dependencies.all = [
-  "scembed-example[cpu,gpu,fast-metrics]",
+  "scembed[cpu,gpu,fast-metrics]",
 ]
 optional-dependencies.cpu = [
   "pyliger>=0.2.4",
@@ -59,7 +59,7 @@ optional-dependencies.doc = [
   "sphinxcontrib-bibtex>=1",
   "sphinxext-opengraph",
 ]
-optional-dependencies.fast_metrics = [
+optional-dependencies.fast-metrics = [
   "faiss-gpu",         # GPU-accelerated nearest neighbors
   "rapids-singlecell", # GPU-accelerated single-cell analysis
 ]
