@@ -830,8 +830,8 @@ class ResolVIMethod(BaseIntegrationMethod):
             prepare_data_kwargs={
                 "spatial_rep": self.spatial_key,
                 "n_neighbors": self.n_neighbors,
-                "slice_key": self.slice_key
-                },
+                "slice_key": self.slice_key,
+            },
             unlabeled_category=self.unlabeled_category,
         )
 
