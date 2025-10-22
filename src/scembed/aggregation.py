@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 import wandb
+import json
 from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
 from scib_metrics.benchmark._core import metric_name_cleaner
 from tqdm import tqdm
@@ -98,18 +99,35 @@ class scIBAggregator:
                 "name": run.name,
             }
 
-            # Handle run.summary - can be dict-like or string in case of errors
+            # Handle run.summary - can be dict-like, string or bytes
             try:
-                run_data.update(dict(run.summary))
-            except (AttributeError, TypeError):
+                if isinstance(run.summary._dict, dict):
+                    run_data.update(run.summary._dict)
+                if isinstance(run.summary._json_dict, str):
+                    parsed = json.loads(run.summary._json_dict)
+                    run_data.update(parsed)
+                if isinstance(run.summary._json_dict, (bytes, bytearray)):
+                    parsed = json.loads(run.summary._json_dict.decode("utf-8"))
+                    run_data.update(parsed)
+            except (AttributeError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
                 # Skip runs with invalid summary data
                 logger.warning("Skipping run %s due to invalid summary data", run.id)
                 continue
 
-            if "config" not in run.config.keys():
-                run_data["config"] = run.config
-            else:
-                run_data.update(**run.config)
+            # Handle the config - can be dict-like, string or bytes
+            try:
+                if isinstance(run.config, dict):
+                    run_data['config'] = parsed
+                if isinstance(run.config, str):
+                    parsed = json.loads(run.config)
+                    run_data['config'] = parsed
+                if isinstance(run.config, (bytes, bytearray)):
+                    parsed = json.loads(run.config.decode("utf-8"))
+                    run_data['config'] = parsed
+            except (AttributeError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
+                logger.warning("No config found for run %s", run.id)
+                run_data['config'] = {}
+            
             data.append(run_data)
 
         # Convert to DataFrame
