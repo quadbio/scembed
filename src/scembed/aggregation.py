@@ -117,7 +117,7 @@ class scIBAggregator:
             # Handle the config - can be dict-like, string or bytes
             try:
                 if isinstance(run.config, dict):
-                    run_data['config'] = parsed
+                    run_data['config'] = run.config
                 if isinstance(run.config, str):
                     parsed = json.loads(run.config)
                     run_data['config'] = parsed
@@ -127,6 +127,7 @@ class scIBAggregator:
             except (AttributeError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
                 logger.warning("No config found for run %s", run.id)
                 run_data['config'] = {}
+
             
             data.append(run_data)
 
@@ -151,6 +152,7 @@ class scIBAggregator:
         # Filter runs with missing configs
         valid_runs = []
         for idx, row in self.raw_df.iterrows():
+            print(row)
             config = row.get("config")
             if config is None or not isinstance(config, dict) or "method" not in config:
                 self.missing_config_runs.append(row["run_id"])
