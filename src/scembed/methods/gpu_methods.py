@@ -1123,7 +1123,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             adata_hvg,
             layer=self.counts_layer,
             batch_key=self.batch_key,
-            sample_key=self.sample_key, # like slice_key in ResolVI
+            sample_key=self.sample_key,  # like slice_key in ResolVI
             labels_key=self.cell_type_key,
             cell_coordinates_key=self.spatial_key,
             expression_embedding_key=expression_embedding_key,
