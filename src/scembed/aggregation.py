@@ -128,7 +128,16 @@ class scIBAggregator:
                 logger.warning("No config found for run %s", run.id)
                 run_data['config'] = {}
 
-            
+            # Handle the method key in the config. Should be string but can be dict
+            try:
+                if isinstance(run_data['config']['method'], str):
+                    pass
+                if isinstance(run_data['config']['method'], dict):
+                    run_data['config']['method'] = run_data['config']['method']['value']
+            except (KeyError, TypeError):
+                logger.warning("No valid method found in config for run %s", run.id)
+                run_data['config']['method'] = None
+
             data.append(run_data)
 
         # Convert to DataFrame
@@ -152,7 +161,7 @@ class scIBAggregator:
         # Filter runs with missing configs
         valid_runs = []
         for idx, row in self.raw_df.iterrows():
-            print(row)
+
             config = row.get("config")
             if config is None or not isinstance(config, dict) or "method" not in config:
                 self.missing_config_runs.append(row["run_id"])
