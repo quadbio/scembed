@@ -1,5 +1,6 @@
 """WandB sweep results aggregation and visualization for scIB benchmarking."""
 
+import json
 from dataclasses import fields
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -71,6 +72,89 @@ class scIBAggregator:
 
         logger.info("Initialized scIBAggregator for %s/%s", entity, project)
 
+    @staticmethod
+    def _parse_wandb_object(wandb_obj: object, obj_name: str) -> dict | None:
+        """Parse W&B API objects that may be dicts, JSON strings, or have internal JSON strings.
+
+        The W&B SDK behavior has changed across versions:
+        - Older versions: objects have dict-like interface directly
+        - Newer versions: objects may have internal `_json_dict` as JSON string instead of dict
+        - Some versions: objects may be plain JSON strings
+
+        Parameters
+        ----------
+        wandb_obj
+            W&B object to parse (e.g., run.summary, run.config)
+        obj_name
+            Name for logging purposes (e.g., "summary", "config")
+
+        Returns
+        -------
+        Parsed dictionary or None if parsing fails
+        """
+        # Handle None
+        if wandb_obj is None:
+            return None
+
+        # Handle plain string (full JSON string)
+        if isinstance(wandb_obj, str):
+            try:
+                return json.loads(wandb_obj)
+            except json.JSONDecodeError:
+                return None
+
+        # Handle objects with broken internal state (JSON string in _json_dict)
+        # This happens in some W&B SDK versions where HTTPSummary._json_dict is a string
+        if hasattr(wandb_obj, "_json_dict") and isinstance(wandb_obj._json_dict, str):
+            try:
+                return json.loads(wandb_obj._json_dict)
+            except json.JSONDecodeError:
+                return None
+
+        # Normal path: object has dict-like interface
+        if hasattr(wandb_obj, "keys"):
+            try:
+                return dict(wandb_obj)
+            except (TypeError, AttributeError):
+                return None
+
+        # Fallback: wrap non-dict object
+        return {obj_name: wandb_obj}
+
+    @staticmethod
+    def _unwrap_wandb_config(config_dict: dict) -> dict:
+        """Unwrap nested W&B config structure.
+
+        W&B configs can have various nesting patterns:
+        - {'config': {'desc': None, 'value': {actual_config}}}  # New SDK
+        - {'config': {actual_config}}                            # Old SDK
+        - {actual_config}                                        # Direct config
+
+        Parameters
+        ----------
+        config_dict
+            Parsed config dictionary
+
+        Returns
+        -------
+        Unwrapped config dictionary with actual parameters
+        """
+        # Check if config is nested under a "config" key
+        if "config" in config_dict:
+            config_inner = config_dict["config"]
+
+            # Further unwrap if it has the desc/value structure
+            if isinstance(config_inner, dict) and "value" in config_inner:
+                return config_inner["value"]
+            elif isinstance(config_inner, dict):
+                return config_inner
+            else:
+                # Wrap non-dict values
+                return {"config": config_inner}
+
+        # Config is already at the top level
+        return config_dict
+
     def fetch_runs(self) -> None:
         """Fetch runs from WandB and process into internal storage."""
         logger.info("Fetching runs from %s/%s...", self.entity, self.project)
@@ -93,40 +177,9 @@ class scIBAggregator:
         # Extract parameter configurations and final results
         data = []
         for run in tqdm(runs, desc="Processing runs"):
-            run_data = {
-                "run_id": run.id,
-                "name": run.name,
-            }
-
-            # Handle run.summary - can be dict-like or string in case of errors
-            try:
-                # Ensure summary is dict-like before converting
-                if run.summary is None:
-                    logger.warning("Skipping run %s due to None summary", run.id)
-                    continue
-
-                # Try to convert to dict - works for both dict and wandb.old.summary.HTTPSummary
-                summary_dict = dict(run.summary)
-
-                # Verify we got a valid dict with some content
-                # Note: empty dict is valid (run might not have logged metrics yet)
-                if not isinstance(summary_dict, dict):
-                    logger.warning(
-                        "Skipping run %s due to invalid summary type: %s", run.id, type(summary_dict).__name__
-                    )
-                    continue
-
-                run_data.update(summary_dict)
-            except (AttributeError, TypeError, ValueError) as e:
-                # Skip runs with invalid summary data
-                logger.warning("Skipping run %s due to summary conversion error: %s - %s", run.id, type(e).__name__, e)
-                continue
-
-            if "config" not in run.config.keys():
-                run_data["config"] = run.config
-            else:
-                run_data.update(**run.config)
-            data.append(run_data)
+            run_data = self._extract_run_data(run)
+            if run_data is not None:
+                data.append(run_data)
 
         # Convert to DataFrame
         self.raw_df = pd.DataFrame(data)
@@ -136,6 +189,55 @@ class scIBAggregator:
 
         # Process the data
         self._process_runs()
+
+        logger.info(
+            "Processing complete: %d methods, %d runs filtered out", len(self.method_data), self.n_runs_filtered
+        )
+
+    def _extract_run_data(self, run) -> dict | None:
+        """Extract data from a single W&B run.
+
+        Parameters
+        ----------
+        run
+            W&B run object
+
+        Returns
+        -------
+        Dictionary with run data or None if extraction failed
+        """
+        run_data = {
+            "run_id": run.id,
+            "name": run.name,
+        }
+
+        # Parse summary
+        summary_dict = self._parse_wandb_object(run.summary, "summary")
+        if summary_dict is None:
+            logger.warning("Skipping run %s due to None summary", run.id)
+            return None
+
+        if not isinstance(summary_dict, dict):
+            logger.warning("Skipping run %s due to invalid summary type: %s", run.id, type(summary_dict).__name__)
+            return None
+
+        run_data.update(summary_dict)
+
+        # Parse config
+        try:
+            config_dict = self._parse_wandb_object(run.config, "config")
+            if config_dict is None:
+                logger.warning("Skipping run %s due to None config", run.id)
+                return None
+
+            # Unwrap nested config structure
+            run_data["config"] = self._unwrap_wandb_config(config_dict)
+
+        except (AttributeError, TypeError, ValueError, json.JSONDecodeError) as e:
+            logger.warning("Skipping run %s due to config parsing error: %s - %s", run.id, type(e).__name__, e)
+            return None
+
+        return run_data
 
         logger.info(
             "Processing complete: %d methods, %d runs filtered out", len(self.method_data), self.n_runs_filtered
