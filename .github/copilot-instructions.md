@@ -5,6 +5,8 @@
 - Don't update Jupyter notebooks - those are managed manually.
 - When running terminal commands, activate the appropriate environment first (use `mamba activate slurm_sweep`).
 - Rather than making assumptions, ask for clarification when uncertain.
+- **GitHub workflows**: Use GitHub CLI (`gh`) when possible. For GitHub MCP server tools, ensure Docker Desktop is running first (`open -a "Docker Desktop"`).
+
 
 ## Project Overview
 
