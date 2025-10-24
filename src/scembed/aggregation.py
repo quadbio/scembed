@@ -100,10 +100,26 @@ class scIBAggregator:
 
             # Handle run.summary - can be dict-like or string in case of errors
             try:
-                run_data.update(dict(run.summary))
-            except (AttributeError, TypeError):
+                # Ensure summary is dict-like before converting
+                if run.summary is None:
+                    logger.warning("Skipping run %s due to None summary", run.id)
+                    continue
+
+                # Try to convert to dict - works for both dict and wandb.old.summary.HTTPSummary
+                summary_dict = dict(run.summary)
+
+                # Verify we got a valid dict with some content
+                # Note: empty dict is valid (run might not have logged metrics yet)
+                if not isinstance(summary_dict, dict):
+                    logger.warning(
+                        "Skipping run %s due to invalid summary type: %s", run.id, type(summary_dict).__name__
+                    )
+                    continue
+
+                run_data.update(summary_dict)
+            except (AttributeError, TypeError, ValueError) as e:
                 # Skip runs with invalid summary data
-                logger.warning("Skipping run %s due to invalid summary data", run.id)
+                logger.warning("Skipping run %s due to summary conversion error: %s - %s", run.id, type(e).__name__, e)
                 continue
 
             if "config" not in run.config.keys():
