@@ -676,6 +676,7 @@ class ResolVIMethod(BaseIntegrationMethod):
         batch_size: int | None = None,
         accelerator: str | None = None,
         n_neighbors: int = 10,
+        slice_key: str | None = None,
         **kwargs,
     ):
         """
@@ -731,6 +732,8 @@ class ResolVIMethod(BaseIntegrationMethod):
             Accelerator type for training.
         n_neighbors
             Number of neighbors for spatial graph.
+        slice_key
+            Key in adata.obs indicating different slices/sections
         """
         super().__init__(
             adata,
@@ -757,6 +760,7 @@ class ResolVIMethod(BaseIntegrationMethod):
             batch_size=batch_size,
             accelerator=accelerator,
             n_neighbors=n_neighbors,
+            slice_key=slice_key,
             **kwargs,
         )
 
@@ -783,6 +787,7 @@ class ResolVIMethod(BaseIntegrationMethod):
         self.batch_size = batch_size
         self.accelerator = accelerator
         self.n_neighbors = n_neighbors
+        self.slice_key = slice_key
         self.model = None
 
     def setup(self, force_recompute: bool = False) -> None:
@@ -822,7 +827,11 @@ class ResolVIMethod(BaseIntegrationMethod):
             layer=self.counts_layer,
             batch_key=self.batch_key,
             labels_key=self.cell_type_key if self.semisupervised else None,
-            prepare_data_kwargs={"spatial_rep": self.spatial_key, "n_neighbors": self.n_neighbors},
+            prepare_data_kwargs={
+                "spatial_rep": self.spatial_key,
+                "n_neighbors": self.n_neighbors,
+                "slice_key": self.slice_key,
+            },
             unlabeled_category=self.unlabeled_category,
         )
 
