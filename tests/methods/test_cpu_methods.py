@@ -92,6 +92,7 @@ class TestHVGMethod:
         assert method.adata.obsm[method.embedding_key].shape[1] == expected_genes
 
 
+@pytest.mark.xdist_group(name="scanorama")
 class TestScanoramaMethod:
     """Test suite for ScanoramaMethod."""
 
