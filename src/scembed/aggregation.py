@@ -34,7 +34,7 @@ class scIBAggregator:
         Directory for saving downloaded models and embeddings. If None, creates temporary directory.
     """
 
-    def __init__(self, entity: str, project: str, output_dir: str | Path | None = None):
+    def __init__(self, entity: str, project: str, output_dir: str | Path | None = None, ignore_metrics: str | list | None = None):
         self.entity = entity
         self.project = project
 
@@ -63,6 +63,9 @@ class scIBAggregator:
 
         # Available metrics in the data
         self.available_scib_metrics: set[str] = set()
+    
+        # Exclude metrics
+        self.ignore_metrics = ignore_metrics
 
         # Mapping of metric display names to their types
         self.metric_to_type: dict[str, str] = self._build_metric_type_mapping()
@@ -356,7 +359,10 @@ class scIBAggregator:
 
             # Create Benchmarker object for this method's scIB metrics
             try:
-                benchmarker = self._create_benchmarker_for_method(method_metrics_df)
+                benchmarker = self._create_benchmarker_for_method(
+                    method_metrics_df,
+                    ignore_metrics=self.ignore_metrics
+                    )
             except (ValueError, KeyError, ImportError) as e:
                 logger.warning("Failed to create Benchmarker for method %s: %s", method, e)
                 # Fallback to storing as DataFrame if Benchmarker creation fails
@@ -382,7 +388,11 @@ class scIBAggregator:
 
         return metric_to_type
 
-    def _create_benchmarker_for_method(self, scib_df: pd.DataFrame) -> Benchmarker:
+    def _create_benchmarker_for_method(
+            self,
+            scib_df: pd.DataFrame,
+            ignore_metrics: str | list | None,
+            ) -> Benchmarker:
         """Create a Benchmarker object for scIB metrics results.
 
         Uses the scIB benchmarking framework :cite:`luecken2022benchmarking` to
@@ -412,6 +422,29 @@ class scIBAggregator:
         ordered_metrics = [metric for metric in self.metric_to_type.keys() if metric in valid_metrics]
         scib_plot = scib_plot.loc[ordered_metrics]
 
+        # Optionally ignore specified metrics
+        if ignore_metrics is not None:
+            if isinstance(ignore_metrics, str):
+                ignore_metrics = [ignore_metrics]
+
+            valid_metrics_set = set(valid_metrics)
+            ignore_set = set(ignore_metrics)
+
+            # Metrics that actually exist and will be ignored
+            ignored_existing = sorted(ignore_set & valid_metrics_set)
+
+            # Metrics requested to ignore but not present
+            ignored_missing = sorted(ignore_set - valid_metrics_set)
+
+            if ignored_missing:
+                logger.warning(
+                    "Requested to ignore metrics that do not exist and were dropped: %s",
+                    ignored_missing,
+                )
+
+            if ignored_existing:
+                scib_plot = scib_plot.drop(index=ignored_existing)
+
         # Create minimal dummy AnnData for Benchmarker initialization
         n_obs = 10
         n_vars = 5
@@ -437,7 +470,12 @@ class scIBAggregator:
 
         return bm
 
-    def aggregate(self, sort_by: str = "Total", min_max_scale_for_selection: bool = True) -> None:
+    def aggregate(
+            self,
+            sort_by: str = "Total",
+            min_max_scale_for_selection: bool = True,
+            ignore_metrics: str | list | None = None,
+            ) -> None:
         """
         Aggregate best run per method into unified results structure.
 
@@ -456,6 +494,8 @@ class scIBAggregator:
             If True, uses scaled metrics for fair comparison across different metric ranges.
             If False, uses raw metrics for selection.
             Default is True. Note: reported metrics are always raw (non-scaled) values.
+        ignore_metrics
+            Metric or list of metrics to exclude from the Benchmarker in the aggregated results.
         """
         if not self.method_data:
             raise ValueError("No data available. Call fetch_runs() first.")
@@ -471,6 +511,7 @@ class scIBAggregator:
 
             # Get metrics DataFrame from Benchmarker for SELECTION (user choice of scaling)
             selection_results_df = benchmarker.get_results(min_max_scale=min_max_scale_for_selection)
+
             # Remove the "Metric Type" row if present
             if "Metric Type" in selection_results_df.index:
                 selection_metrics_df = selection_results_df.drop(index="Metric Type")
@@ -533,7 +574,10 @@ class scIBAggregator:
 
         # Create Benchmarker object for aggregated results
         try:
-            benchmarker = self._create_benchmarker_for_method(metrics_df)
+            benchmarker = self._create_benchmarker_for_method(
+                metrics_df,
+                ignore_metrics
+                )
         except (ValueError, KeyError, ImportError) as e:
             logger.warning("Failed to create aggregated Benchmarker: %s", e)
             # Fallback to storing as DataFrame
