@@ -4,6 +4,7 @@ import json
 from dataclasses import fields
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -12,14 +13,14 @@ import wandb
 from scib_metrics.benchmark import BatchCorrection, Benchmarker, BioConservation
 from scib_metrics.benchmark._core import metric_name_cleaner
 from tqdm import tqdm
-from typing import List, Union, Dict
 
 from scembed.logging import logger
 from scembed.utils import _download_artifact_by_run_id
 
 # Allowed scalar types for filtering
 AllowedScalar = Union[int, float, str, bool]
-AllowedFilterValue = Union[AllowedScalar, List[AllowedScalar]]
+AllowedFilterValue = Union[AllowedScalar, list[AllowedScalar]]
+
 
 class scIBAggregator:
     """Aggregator for WandB sweep results with scIB metrics visualization.
@@ -158,10 +159,9 @@ class scIBAggregator:
 
         # Config is already at the top level
         return config_dict
-    
+
     def _filter_params(self, target_key, target_value) -> None:
         """Filter runs to match certain parameter criteria."""
-        
         keep_runs = []
         discard_runs = []
 
@@ -175,7 +175,7 @@ class scIBAggregator:
             # Keeping this here for safety
             param_value = config.get(target_key, None)
             if isinstance(param_value, dict):
-                param_value = param_value['value']
+                param_value = param_value["value"]
 
             if param_value is None:
                 if self.filter_allow_none:
@@ -196,26 +196,24 @@ class scIBAggregator:
                     keep_runs.append(idx)
                 else:
                     discard_runs.append(idx)
-                
+
         if discard_runs:
             logger.info(
                 "Masked %d runs not matching %s=%s. %d runs remain.",
                 len(discard_runs),
                 target_key,
                 target_value,
-                len(keep_runs)
+                len(keep_runs),
             )
-        
+
         self.raw_df = self.raw_df.loc[keep_runs].copy()
-        
+
         if self.raw_df.empty:
             logger.warning("All runs were masked, please relax the filtering constraints.")
 
     def fetch_runs(
-            self,
-            filter_params: Dict[str, AllowedFilterValue] | None = None,
-            filter_allow_none: bool = True
-            ) -> None:
+        self, filter_params: dict[str, AllowedFilterValue] | None = None, filter_allow_none: bool = True
+    ) -> None:
         """Fetch runs from WandB and process into internal storage."""
         logger.info("Fetching runs from %s/%s...", self.entity, self.project)
 
@@ -254,10 +252,7 @@ class scIBAggregator:
         # Filter the data
         if self.filter_params is not None:
             for target_key, target_value in self.filter_params.items():
-                self._filter_params(
-                    target_key=target_key,
-                    target_value=target_value
-                )
+                self._filter_params(target_key=target_key, target_value=target_value)
 
         # Process the data
         self._process_runs()
