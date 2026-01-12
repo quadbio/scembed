@@ -25,7 +25,7 @@ dynamic = [ "version" ]
 
 dependencies = [
   "numpy>=2.1",
-  "pyarrow>=21",         # Required for parquet support in pandas
+  "pyarrow>=20",         # Required for parquet support in pandas
   "scanpy>=1.11.4",
   "scib-metrics>=0.5.6",
   "scipy>=1.16",         # Ensure compatibility with PyTorch tensors
