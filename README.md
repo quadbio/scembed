@@ -60,10 +60,9 @@ The package uses optional dependency groups to minimize installation overhead:
 - **`[fast_metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS` ⚡
 - **`[all]`**: All optional dependencies
 
-**⚠️ Note**: If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda/mamba first:
-```bash
-mamba install louvain python-annoy
-```
+**⚠️ Notes**:
+- For GPU-accelerated FAISS, install `faiss-gpu` via conda ([installation guide](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md)).
+- If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda first.
 
 ## 📝 Release notes
 

@@ -61,7 +61,7 @@ optional-dependencies.doc = [
   "sphinxext-opengraph",
 ]
 optional-dependencies.fast-metrics = [
-  "faiss-gpu",         # GPU-accelerated nearest neighbors
+  "faiss-cpu",         # Fast nearest neighbors (GPU via rapids-singlecell)
   "rapids-singlecell", # GPU-accelerated single-cell analysis
 ]
 
