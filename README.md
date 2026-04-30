@@ -33,7 +33,7 @@ in particular, the [API documentation][].
 
 ## 📦 Installation
 
-You need to have Python 3.10 or newer installed on your system.
+You need to have Python 3.11 or newer installed on your system.
 If you don't have Python installed, we recommend installing [uv][].
 
 There are several alternative options to install scembed:
@@ -55,9 +55,9 @@ pip install git+https://github.com/quadbio/scembed.git@main
 The package uses optional dependency groups to minimize installation overhead:
 
 - **Base**: Core functionality (scanpy, scib-metrics, wandb)
-- **`[cpu]`**: CPU-based methods (e.g. Harmony, LIGER, Scanorama)
-- **`[gpu]`**: GPU-based methods (e.g. scVI, scANVI, scPoli)
-- **`[fast_metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS` ⚡
+- **`[cpu]`**: CPU-only methods (e.g. LIGER, Scanorama)
+- **`[gpu]`**: GPU/torch-based methods (e.g. Harmony, scVI, scANVI, scPoli)
+- **`[fast-metrics]`**: Accelerated evaluation with `faiss` and `RAPIDS` ⚡
 - **`[all]`**: All optional dependencies
 
 **⚠️ Notes**:
