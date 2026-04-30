@@ -934,6 +934,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         batch_size: int | None = None,
         gene_likelihood: str | None = None,
         check_val_every_n_epoch: int | None = None,
+        sample_key: str | None = None,
         **kwargs,
     ):
         """
@@ -979,6 +980,8 @@ class scVIVAMethod(BaseIntegrationMethod):
             Likelihood, nb, zinb or poisson, see scvi docs.
         check_val_every_n_epoch
             Check validation loss every n epochs.
+        sample_key
+            Key in adata.obs indicating different slices/sections.
         """
         super().__init__(
             adata,
@@ -998,6 +1001,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             batch_size=batch_size,
             gene_likelihood=gene_likelihood,
             check_val_every_n_epoch=check_val_every_n_epoch,
+            sample_key=sample_key,
             **kwargs,
         )
 
@@ -1018,6 +1022,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         self.batch_size = batch_size
         self.gene_likelihood = gene_likelihood
         self.check_val_every_n_epoch = check_val_every_n_epoch
+        self.sample_key = sample_key
 
         # Initialize models
         self.embedding_model = None
@@ -1035,9 +1040,11 @@ class scVIVAMethod(BaseIntegrationMethod):
         adata_prepared = self._prepare_hvg()
 
         # Prepare preprocessing parameters, filtering out None values for k_nn only
+        # preprocessing_params are passed to preprocessing_anndata and setup_anndata
+        # as described in the tutorial
         preprocessing_params = {
             "adata": adata_prepared,
-            "sample_key": self.batch_key,
+            "sample_key": self.sample_key,
             "labels_key": self.cell_type_key,
             "cell_coordinates_key": self.spatial_key,
             "expression_embedding_key": expression_embedding_key,
@@ -1125,7 +1132,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             adata_hvg,
             layer=self.counts_layer,
             batch_key=self.batch_key,
-            sample_key=self.batch_key,
+            sample_key=self.sample_key,  # like slice_key in ResolVI
             labels_key=self.cell_type_key,
             cell_coordinates_key=self.spatial_key,
             expression_embedding_key=expression_embedding_key,
