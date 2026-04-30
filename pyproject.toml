@@ -84,15 +84,6 @@ doc = [
   "sphinxext-opengraph",
 ]
 
-# Workaround: PyPI has quarantined the `lightning` distribution
-# (https://pypi.org/simple/lightning/ -> project-status: quarantined, zero
-# files). `scvi-tools` depends on `lightning>=2.0`, so any environment with
-# the `[gpu]` extra fails to resolve. Pull `lightning` from the upstream
-# GitHub monorepo instead until PyPI restores the package, then drop this
-# block (and the matching entry in `optional-dependencies.gpu`).
-[tool.uv.sources]
-lightning = { git = "https://github.com/Lightning-AI/pytorch-lightning", tag = "2.6.2" }
-
 [tool.hatch]
 envs.default.installer = "uv"
 envs.default.dependency-groups = [ "dev" ]
@@ -107,6 +98,15 @@ envs.hatch-test.matrix = [
   { python = [ "3.11", "3.14" ] },
 ]
 version.source = "vcs"
+
+[tool.uv]
+# Workaround: PyPI has quarantined the `lightning` distribution
+# (https://pypi.org/simple/lightning/ -> project-status: quarantined, zero
+# files). `scvi-tools` depends on `lightning>=2.0`, so any environment with
+# the `[gpu]` extra fails to resolve. Pull `lightning` from the upstream
+# GitHub monorepo instead until PyPI restores the package, then drop this
+# block (and the matching entry in `optional-dependencies.gpu`).
+sources.lightning = { git = "https://github.com/Lightning-AI/pytorch-lightning", tag = "2.6.2" }
 
 [tool.ruff]
 line-length = 120
