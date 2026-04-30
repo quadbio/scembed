@@ -40,11 +40,36 @@ optional-dependencies.cpu = [
   "pyliger>=0.2.4",
   "scanorama>=1.7.4",
 ]
-optional-dependencies.dev = [
+optional-dependencies.fast-metrics = [
+  "faiss-cpu",         # Fast nearest neighbors (GPU via rapids-singlecell)
+  "rapids-singlecell", # GPU-accelerated single-cell analysis
+]
+
+optional-dependencies.gpu = [
+  "harmony-pytorch", # GPU-accelerated Harmony
+  "lightning",       # transitive via scvi-tools, declared here so the [tool.uv.sources] redirect applies
+  "scarches>=0.6.1", # for scPoli
+  "scvi-tools>=1.3",
+  "torch>=2.8",
+]
+# https://docs.pypi.org/project_metadata/#project-urls
+urls.Documentation = "https://scembed.readthedocs.io/"
+urls.Homepage = "https://github.com/quadbio/scembed"
+urls.Source = "https://github.com/quadbio/scembed"
+
+[dependency-groups]
+dev = [
   "pre-commit",
   "twine>=4.0.2",
 ]
-optional-dependencies.doc = [
+test = [
+  "coverage>=7.10",
+  "h5py",           # for testing h5 format
+  "pyarrow",        # for testing parquet format (already in main deps but explicit for tests)
+  "pytest",
+  "pytest-cov",     # For VS Code's coverage functionality
+]
+doc = [
   "docutils>=0.8,!=0.18.*,!=0.19.*",
   "ipykernel",
   "ipython",
@@ -58,53 +83,39 @@ optional-dependencies.doc = [
   "sphinx-copybutton",
   "sphinx-tabs",
   "sphinxcontrib-bibtex>=1",
+  "sphinxcontrib-katex",
   "sphinxext-opengraph",
 ]
-optional-dependencies.fast-metrics = [
-  "faiss-cpu",         # Fast nearest neighbors (GPU via rapids-singlecell)
-  "rapids-singlecell", # GPU-accelerated single-cell analysis
-]
-
-optional-dependencies.gpu = [
-  "harmony-pytorch", # GPU-accelerated Harmony
-  "scarches>=0.6.1", # for scPoli
-  "scvi-tools>=1.3",
-  "torch>=2.8",
-]
-
-optional-dependencies.test = [
-  "coverage>=7.10",
-  "h5py",           # for testing h5 format
-  "pyarrow",        # for testing parquet format (already in main deps but explicit for tests)
-  "pytest",
-  "pytest-cov",     # For VS Code's coverage functionality
-  "scembed[cpu]",
-  "scembed[gpu]",
-]
-# https://docs.pypi.org/project_metadata/#project-urls
-urls.Documentation = "https://scembed.readthedocs.io/"
-urls.Homepage = "https://github.com/quadbio/scembed"
-urls.Source = "https://github.com/quadbio/scembed"
 
 [tool.hatch.version]
 source = "vcs"
 
+# Workaround: PyPI has quarantined the `lightning` distribution
+# (https://pypi.org/simple/lightning/ -> project-status: quarantined, zero
+# files). `scvi-tools` depends on `lightning>=2.0`, so any environment with
+# the `[gpu]` extra fails to resolve. Pull `lightning` from the upstream
+# GitHub monorepo instead until PyPI restores the package, then drop this
+# block.
 [tool.hatch.envs.default]
 installer = "uv"
-features = [ "dev" ]
+dependency-groups = [ "dev" ]
 
 [tool.hatch.envs.docs]
-features = [ "doc" ]
+dependency-groups = [ "doc" ]
 scripts.build = "sphinx-build -M html docs docs/_build {args}"
 scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 scripts.clean = "git clean -fdX -- {args:docs}"
 
 # Test the lowest and highest supported Python versions with stable deps
 [[tool.hatch.envs.hatch-test.matrix]]
-python = [ "3.11", "3.13" ]
+python = [ "3.11", "3.14" ]
 
 [tool.hatch.envs.hatch-test]
-features = [ "dev", "test" ]
+features = [ "cpu", "gpu" ]
+dependency-groups = [ "dev", "test" ]
+
+[tool.uv.sources]
+lightning = { git = "https://github.com/Lightning-AI/pytorch-lightning", tag = "2.6.2" }
 
 [tool.ruff]
 line-length = 120
