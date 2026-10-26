@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning][].
 ## [v0.1.0]
 
 ### Added
+
 - Basic tests for the base class, gpu and cpu-based methods {pr}`2`
 - Added tests for evaluation and aggregatio modules {pr}`3`
 - Added basic tutorial {pr}`3`
