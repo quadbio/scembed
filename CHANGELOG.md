@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning][].
 
 ## [Unreleased]
 
+### Fixed
+- Drop the `lightning` git redirect: PyPI has restored the package, and the redirect's tag no longer resolves, which broke installing the `gpu` extra with uv
+
 ## [v0.1.0]
 
 ### Added
