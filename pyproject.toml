@@ -40,6 +40,7 @@ optional-dependencies.all = [
 optional-dependencies.cpu = [
   "pyliger>=0.2.4",
   "scanorama>=1.7.4",
+  "setuptools<82",    # louvain (via pyliger) imports pkg_resources, removed in setuptools 82
 ]
 optional-dependencies.fast-metrics = [
   "faiss-cpu",         # Fast nearest neighbors (GPU via rapids-singlecell)
