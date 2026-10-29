@@ -23,21 +23,21 @@ workflow lives in `REVIEW_GUIDE.md`.
 
 ## Where To Find What
 
-| Topic | Source of truth |
-|-------|-----------------|
-| Method registry / dispatch | `src/scembed/factory.py` (`get_method_instance`) |
-| Method base class & embedding-key convention | `src/scembed/methods/base.py` (`BaseIntegrationMethod`) |
-| CPU-only methods (HVG, LIGER, Scanorama, precomputed) | `src/scembed/methods/cpu_methods.py` |
-| GPU/torch methods (Harmony, scVI, scANVI, scPoli, ResolVI, scVIVA) | `src/scembed/methods/gpu_methods.py` |
-| scIB benchmarking | `src/scembed/evaluation.py` (`IntegrationEvaluator`) |
-| W&B sweep aggregation | `src/scembed/aggregation.py` (`scIBAggregator`) |
-| Optional-dependency gating | `src/scembed/check.py` (`check_deps`, `CHECKERS`) |
-| Public API surface | `src/scembed/__init__.py` |
-| Contributor guide | `docs/contributing.md` |
-| Usage examples | `docs/notebooks/basic_usage.ipynb` |
-| PR review workflow & risk areas | `REVIEW_GUIDE.md` |
-| Test fixtures | `tests/conftest.py` |
-| Sweep driver | <https://github.com/quadbio/slurm_sweep> |
+| Topic                                                              | Source of truth                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------- |
+| Method registry / dispatch                                         | `src/scembed/factory.py` (`get_method_instance`)        |
+| Method base class & embedding-key convention                       | `src/scembed/methods/base.py` (`BaseIntegrationMethod`) |
+| CPU-only methods (HVG, LIGER, Scanorama, precomputed)              | `src/scembed/methods/cpu_methods.py`                    |
+| GPU/torch methods (Harmony, scVI, scANVI, scPoli, ResolVI, scVIVA) | `src/scembed/methods/gpu_methods.py`                    |
+| scIB benchmarking                                                  | `src/scembed/evaluation.py` (`IntegrationEvaluator`)    |
+| W&B sweep aggregation                                              | `src/scembed/aggregation.py` (`scIBAggregator`)         |
+| Optional-dependency gating                                         | `src/scembed/check.py` (`check_deps`, `CHECKERS`)       |
+| Public API surface                                                 | `src/scembed/__init__.py`                               |
+| Contributor guide                                                  | `docs/contributing.md`                                  |
+| Usage examples                                                     | `docs/notebooks/basic_usage.ipynb`                      |
+| PR review workflow & risk areas                                    | `REVIEW_GUIDE.md`                                       |
+| Test fixtures                                                      | `tests/conftest.py`                                     |
+| Sweep driver                                                       | <https://github.com/quadbio/slurm_sweep>                |
 
 ## Review Guidelines
 
