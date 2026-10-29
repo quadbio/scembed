@@ -7,7 +7,7 @@ from typing import Literal
 
 from scembed.check import check_deps
 from scembed.logging import logger
-from scembed.utils import _get_wandb_logger
+from scembed.utils import _available_cpus, _get_wandb_logger
 
 from .base import BaseIntegrationMethod
 
@@ -19,7 +19,14 @@ class HarmonyMethod(BaseIntegrationMethod):
     sensitive and accurate integration of single-cell data.
     """
 
-    def __init__(self, adata, theta: float | None = None, **kwargs):
+    def __init__(
+        self,
+        adata,
+        theta: float | None = None,
+        n_jobs: int | None = None,
+        use_gpu: bool | None = None,
+        **kwargs,
+    ):
         """
         Initialize Harmony method.
 
@@ -31,9 +38,16 @@ class HarmonyMethod(BaseIntegrationMethod):
             Annotated data object to integrate.
         theta
             Diversity clustering penalty parameter.
+        n_jobs
+            Number of CPU threads. If None, uses the CPUs this process may run on; Harmony's own default
+            takes every physical core of the machine, ignoring e.g. a Slurm allocation.
+        use_gpu
+            Whether to run on the GPU. If None, uses it when CUDA is available.
         """
-        super().__init__(adata, theta=theta, **kwargs)
+        super().__init__(adata, theta=theta, n_jobs=n_jobs, use_gpu=use_gpu, **kwargs)
         self.theta = theta
+        self.n_jobs = n_jobs
+        self.use_gpu = use_gpu
 
     def fit(self):
         """Fit Harmony - no explicit fitting needed."""
@@ -44,12 +58,15 @@ class HarmonyMethod(BaseIntegrationMethod):
     def transform(self):
         """Apply Harmony integration."""
         check_deps("harmony-pytorch")
+        import torch
         from harmony import harmonize
 
         # Prepare harmony parameters, filtering out None values
         harmony_params = self._filter_none_params(
             {
                 "theta": self.theta,
+                "n_jobs": self.n_jobs if self.n_jobs is not None else _available_cpus(),
+                "use_gpu": self.use_gpu if self.use_gpu is not None else torch.cuda.is_available(),
             }
         )
 

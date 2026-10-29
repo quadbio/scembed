@@ -1,4 +1,5 @@
 import gzip
+import os
 import pickle
 from pathlib import Path
 from typing import Literal
@@ -12,6 +13,13 @@ from scib_metrics.nearest_neighbors import NeighborsResults
 
 from scembed.check import check_deps
 from scembed.logging import logger
+
+
+def _available_cpus() -> int:
+    """Number of CPUs this process may run on (e.g. a Slurm allocation), not all CPUs of the machine."""
+    if hasattr(os, "sched_getaffinity"):
+        return len(os.sched_getaffinity(0))
+    return os.cpu_count() or 1
 
 
 def faiss_brute_force_nn(X: np.ndarray, k: int):
