@@ -2,7 +2,7 @@
 
 `scembed` is a Python package for benchmarking single-cell data integration
 methods with [scIB metrics][]. It wraps common integration tools (Harmony,
-LIGER, Scanorama, scVI, scANVI, scPoli, ResolVI, scVIVA), drives benchmarks
+LIGER, Scanorama, scVI, scANVI, scPoli, ResolVI, scVIVA, SIMVI), drives benchmarks
 through [scIB metrics][], and aggregates W&B sweep results produced via
 [slurm_sweep][].
 
@@ -64,6 +64,8 @@ the source-of-truth map above.
     `torch`. Used by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`,
     `scVIVAMethod`, `ResolVIMethod`, `scPoliMethod`. **`ResolVIMethod` and
     `scVIVAMethod` depend on `scviva-tools`, `scPoliMethod` on `scarches`.**
+  - **No extra** — `SIMVIMethod` needs `simvi` ported to current
+    scvi-tools (not on PyPI) and `torch-geometric`, installed separately.
   - **`[fast-metrics]`** — `faiss-cpu`, `rapids-singlecell`.
 - W&B SDK version differences are isolated in helper methods inside
   `aggregation.py`. Don't sprinkle SDK-version checks elsewhere.

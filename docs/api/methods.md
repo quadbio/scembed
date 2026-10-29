@@ -26,6 +26,7 @@
 
     methods.HarmonyMethod
     methods.ResolVIMethod
+    methods.SIMVIMethod
     methods.scANVIMethod
     methods.scPoliMethod
     methods.scVIMethod
