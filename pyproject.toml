@@ -25,6 +25,7 @@ dynamic = [ "version" ]
 
 dependencies = [
   "numpy>=2.1",
+  "pandas<3",            # scib-metrics Benchmarker.get_results and scarches scPoli fail on pandas 3
   "pyarrow>=20",         # Required for parquet support in pandas
   "scanpy>=1.11.4",
   "scib-metrics>=0.5.6",
