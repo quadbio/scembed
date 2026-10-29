@@ -149,7 +149,7 @@ class TestResolVIMethod:
     )
     def test_resolvi_method(self, spatial_data, n_latent, n_neighbors):
         """Test ResolVI method with different latent dimensions and neighbor counts."""
-        pytest.importorskip("scvi")
+        pytest.importorskip("scviva")
 
         method = ResolVIMethod(
             spatial_data,
@@ -189,7 +189,7 @@ class TestscVIVAMethod:
     )
     def test_scviva_method(self, spatial_data, embedding_method, k_nn):
         """Test scVIVA method with different embedding methods and neighbor counts."""
-        pytest.importorskip("scvi")
+        pytest.importorskip("scviva")
 
         method = scVIVAMethod(
             spatial_data,
