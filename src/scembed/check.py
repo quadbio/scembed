@@ -76,6 +76,9 @@ INSTALL_HINTS = types.SimpleNamespace(
     scvi_tools="To use scVI-tools methods (scVI, scANVI), install scvi-tools: pip install scvi-tools",
     scviva_tools="To use ResolVI or scVIVA, install scviva-tools: pip install scviva-tools",
     scarches="To use scPoli integration, install scarches: pip install scarches",
+    simvi="To use SIMVI, install a version of SIMVI ported to scvi-tools>=1.5; "
+    "the PyPI release (0.1.2) requires scvi-tools<=0.16.2.",
+    torch_geometric="To use SIMVI, install torch-geometric: pip install torch-geometric",
     # Data analysis and visualization
     lightning="To use PyTorch Lightning loggers, install lightning: pip install lightning",
 )
@@ -99,6 +102,10 @@ CHECKERS = {
         "scviva", package_name="scviva-tools", vmin="0.1.7", install_hint=INSTALL_HINTS.scviva_tools
     ),
     "scarches": Checker("scarches", vmin="0.6.0", install_hint=INSTALL_HINTS.scarches),
+    "simvi": Checker("simvi", vmin=None, install_hint=INSTALL_HINTS.simvi),
+    "torch-geometric": Checker(
+        "torch_geometric", package_name="torch-geometric", vmin=None, install_hint=INSTALL_HINTS.torch_geometric
+    ),
     # Data analysis and visualization
     "lightning": Checker("lightning", package_name="lightning", vmin=None, install_hint=INSTALL_HINTS.lightning),
 }

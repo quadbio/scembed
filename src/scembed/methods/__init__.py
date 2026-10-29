@@ -2,7 +2,15 @@
 
 from .base import BaseIntegrationMethod
 from .cpu_methods import HVGMethod, LIGERMethod, PrecomputedEmbeddingMethod, ScanoramaMethod
-from .gpu_methods import HarmonyMethod, ResolVIMethod, scANVIMethod, scPoliMethod, scVIMethod, scVIVAMethod
+from .gpu_methods import (
+    HarmonyMethod,
+    ResolVIMethod,
+    SIMVIMethod,
+    scANVIMethod,
+    scPoliMethod,
+    scVIMethod,
+    scVIVAMethod,
+)
 
 __all__ = [
     "BaseIntegrationMethod",
@@ -12,6 +20,7 @@ __all__ = [
     "ScanoramaMethod",
     "HarmonyMethod",
     "ResolVIMethod",
+    "SIMVIMethod",
     "scANVIMethod",
     "scPoliMethod",
     "scVIMethod",

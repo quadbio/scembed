@@ -1,10 +1,12 @@
 """Tests for GPU-based integration methods."""
 
+import numpy as np
 import pytest
 
 from scembed.methods.gpu_methods import (
     HarmonyMethod,
     ResolVIMethod,
+    SIMVIMethod,
     scANVIMethod,
     scPoliMethod,
     scVIMethod,
@@ -192,6 +194,60 @@ class TestResolVIMethod:
         assert method.adata.obsm[method.embedding_key].shape[0] == method.adata.n_obs
         # ResolVI should produce n_latent dimensional embedding
         assert method.adata.obsm[method.embedding_key].shape[1] == n_latent
+
+
+class TestSIMVIMethod:
+    """Test suite for SIMVIMethod (spatial method)."""
+
+    @pytest.mark.parametrize(
+        "n_intrinsic,n_spatial,batch_size",
+        [
+            (5, 4, None),
+            (10, 6, 256),
+        ],
+    )
+    def test_simvi_method(self, spatial_data, n_intrinsic, n_spatial, batch_size):
+        """Test SIMVI method with different latent dimensions, full- and mini-batch."""
+        pytest.importorskip("torch_geometric")
+        pytest.importorskip("simvi")
+
+        method = SIMVIMethod(
+            spatial_data,
+            batch_key="batch",
+            cell_type_key="cell_type",
+            spatial_key="spatial",
+            n_intrinsic=n_intrinsic,
+            n_spatial=n_spatial,
+            batch_size=batch_size,
+            max_epochs=3,
+            mae_epochs=2,
+        )
+
+        assert not method.is_fitted
+
+        method.fit_transform()
+
+        assert method.is_fitted
+        # The intrinsic latent is the embedding; the neighbour-induced latent sits next to it
+        assert method.adata.obsm[method.embedding_key].shape == (method.adata.n_obs, n_intrinsic)
+        assert method.adata.obsm[method.spatial_embedding_key].shape == (method.adata.n_obs, n_spatial)
+
+    def test_simvi_save_load(self, spatial_data, tmp_path):
+        """A saved SIMVI model reloads and reproduces the embedding."""
+        pytest.importorskip("torch_geometric")
+        pytest.importorskip("simvi")
+
+        method = SIMVIMethod(spatial_data, max_epochs=2, mae_epochs=1)
+        method.fit_transform()
+        model_dir = method.save_model(tmp_path)
+
+        loaded = SIMVIMethod(spatial_data)
+        loaded._load_from_disk(model_dir)
+        loaded.transform()
+
+        np.testing.assert_allclose(
+            loaded.adata.obsm[loaded.embedding_key], method.adata.obsm[method.embedding_key], rtol=1e-4, atol=1e-5
+        )
 
 
 class TestscVIVAMethod:
