@@ -74,6 +74,7 @@ INSTALL_HINTS = types.SimpleNamespace(
     # Integration methods - GPU
     harmony_pytorch="To use GPU-accelerated Harmony, install harmony-pytorch: pip install harmony-pytorch",
     scvi_tools="To use scVI-tools methods (scVI, scANVI), install scvi-tools: pip install scvi-tools",
+    scviva_tools="To use ResolVI or scVIVA, install scviva-tools: pip install scviva-tools",
     scarches="To use scPoli integration, install scarches: pip install scarches",
     # Data analysis and visualization
     lightning="To use PyTorch Lightning loggers, install lightning: pip install lightning",
@@ -94,6 +95,9 @@ CHECKERS = {
         "harmony", package_name="harmony-pytorch", vmin=None, install_hint=INSTALL_HINTS.harmony_pytorch
     ),
     "scvi-tools": Checker("scvi", package_name="scvi-tools", vmin="1.0.0", install_hint=INSTALL_HINTS.scvi_tools),
+    "scviva-tools": Checker(
+        "scviva", package_name="scviva-tools", vmin="0.1.7", install_hint=INSTALL_HINTS.scviva_tools
+    ),
     "scarches": Checker("scarches", vmin="0.6.0", install_hint=INSTALL_HINTS.scarches),
     # Data analysis and visualization
     "lightning": Checker("lightning", package_name="lightning", vmin=None, install_hint=INSTALL_HINTS.lightning),
