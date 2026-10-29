@@ -33,6 +33,24 @@ class TestHarmonyMethod:
         # Harmony should preserve dimensionality from PCA
         assert method.adata.obsm[method.embedding_key].shape[1] == pbmc_data.obsm["X_pca"].shape[1]
 
+    @pytest.mark.parametrize("n_jobs,use_gpu", [(None, None), (2, False)])
+    def test_harmony_resources(self, pbmc_data, monkeypatch, n_jobs, use_gpu):
+        """Harmony gets torch's thread setting, not every core of the machine."""
+        harmony = pytest.importorskip("harmony")
+        torch = pytest.importorskip("torch")
+
+        captured = {}
+
+        def fake_harmonize(X, obs, **kwargs):
+            captured.update(kwargs)
+            return X
+
+        monkeypatch.setattr(harmony, "harmonize", fake_harmonize)
+        HarmonyMethod(pbmc_data, n_jobs=n_jobs, use_gpu=use_gpu).fit_transform()
+
+        assert captured["n_jobs"] == (n_jobs if n_jobs is not None else torch.get_num_threads())
+        assert captured["use_gpu"] == (use_gpu if use_gpu is not None else torch.cuda.is_available())
+
 
 class TestscVIMethod:
     """Test suite for scVIMethod."""
