@@ -647,7 +647,7 @@ class ResolVIMethod(BaseIntegrationMethod):
     """ResolVI integration method for spatial transcriptomics.
 
     Wrapper around the ResolVI method :cite:`ergen2025resolvi` for addressing
-    noise and bias in spatial transcriptomics. Part of the scvi-tools framework
+    noise and bias in spatial transcriptomics. Part of scviva-tools, built on scvi-tools
     :cite:`gayoso2022python`.
     """
 
@@ -810,9 +810,10 @@ class ResolVIMethod(BaseIntegrationMethod):
         Note: ResolVI will compute spatial neighbors internally in `_prepare_data`, which is called from `setup_anndata`.
         To compute neighbors, it will attempt to use rapids_singlecell and fall back to scanpy if necessary. It simply computes
         `n_neighbors` + 5 (by default, 15) neighbors in the given spatial representation, treating each batch separately.
+        scviva-tools 0.1.8 and earlier compute these neighbors incorrectly; YosefLab/scviva-tools#48 fixes it.
         """
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import ResolVI
 
         # Ensure data is setup
         self.setup()
@@ -822,7 +823,7 @@ class ResolVIMethod(BaseIntegrationMethod):
 
         # Setup ResolVI data registration
         # ResolVI setup_anndata will automatically compute spatial neighbors if missing
-        scvi.external.RESOLVI.setup_anndata(
+        ResolVI.setup_anndata(
             adata_hvg,
             layer=self.counts_layer,
             batch_key=self.batch_key,
@@ -854,7 +855,7 @@ class ResolVIMethod(BaseIntegrationMethod):
         )
 
         # Create ResolVI model
-        self.model = scvi.external.RESOLVI(
+        self.model = ResolVI(
             adata_hvg,
             **model_params,
         )
@@ -894,8 +895,8 @@ class ResolVIMethod(BaseIntegrationMethod):
 
     def _load_from_disk(self, model_path: Path) -> None:
         """Load ResolVI model from disk."""
-        check_deps("scvi-tools")
-        self._load_scvi_model(model_path, "scvi.external.RESOLVI")
+        check_deps("scviva-tools")
+        self._load_scvi_model(model_path, "scviva.model.ResolVI")
 
     def save_model(self, path: Path) -> Path | None:
         """Save ResolVI model."""
@@ -912,7 +913,7 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     Wrapper around the scVIVA method :cite:`levy2025scviva` for probabilistic
     framework for representation of cells and their environments in spatial
-    transcriptomics. Part of the scvi-tools framework :cite:`gayoso2022python`.
+    transcriptomics. Part of scviva-tools, built on scvi-tools :cite:`gayoso2022python`.
     """
 
     def __init__(
@@ -1025,8 +1026,8 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def setup(self, expression_embedding_key: str, force_recompute: bool = False) -> None:
         """Setup scVIVA-specific preprocessing."""
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import SCVIVA
 
         if self.setup_state["is_setup"] and not force_recompute:
             return
@@ -1048,7 +1049,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             preprocessing_params["k_nn"] = self.k_nn
 
         # Run preprocessing to compute neighborhoods
-        scvi.external.SCVIVA.preprocessing_anndata(**preprocessing_params)
+        SCVIVA.preprocessing_anndata(**preprocessing_params)
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -1058,8 +1059,8 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def fit(self):
         """Fit scVIVA model with expression embedding computation or using pre-computed embeddings."""
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import SCVIVA
 
         # Step 1: Handle expression embeddings - either compute or use pre-computed
         if self.expression_embedding_key is not None:
@@ -1121,7 +1122,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         adata_hvg = self.setup_state["adata_prepared"]
 
         # Step 3: Setup scVIVA data registration
-        scvi.external.SCVIVA.setup_anndata(
+        SCVIVA.setup_anndata(
             adata_hvg,
             layer=self.counts_layer,
             batch_key=self.batch_key,
@@ -1145,7 +1146,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             }
         )
 
-        self.model = scvi.external.SCVIVA(adata_hvg, **model_params)
+        self.model = SCVIVA(adata_hvg, **model_params)
         logger.info("Set up scVIVA model: %s", self.model)
 
         # Prepare training parameters, filtering out None values
@@ -1199,7 +1200,7 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def _load_from_disk(self, model_path: Path) -> None:
         """Load scVIVA model from disk."""
-        check_deps("scvi-tools")
+        check_deps("scviva-tools")
 
         # Determine which expression embedding key to use
         if self.expression_embedding_key is not None:
@@ -1214,4 +1215,4 @@ class scVIVAMethod(BaseIntegrationMethod):
                 f"Available keys: {list(self.adata.obsm.keys())}"
             )
 
-        self._load_scvi_model(model_path, "scvi.external.SCVIVA", expression_embedding_key=expression_embedding_key)
+        self._load_scvi_model(model_path, "scviva.model.SCVIVA", expression_embedding_key=expression_embedding_key)

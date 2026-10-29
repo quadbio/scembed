@@ -60,10 +60,10 @@ the source-of-truth map above.
   - **`[cpu]`** — `pyliger`, `scanorama`. Used by `LIGERMethod`,
     `ScanoramaMethod`. (`HVGMethod` and `PrecomputedEmbeddingMethod` need
     no extra.)
-  - **`[gpu]`** — `harmony-pytorch`, `scvi-tools`, `scarches`, `torch`. Used
-    by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`, `scVIVAMethod`,
-    `ResolVIMethod`, `scPoliMethod`. **`scPoliMethod` depends on `scarches`,
-    not `scvi-tools`.**
+  - **`[gpu]`** — `harmony-pytorch`, `scvi-tools`, `scviva-tools`, `scarches`,
+    `torch`. Used by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`,
+    `scVIVAMethod`, `ResolVIMethod`, `scPoliMethod`. **`ResolVIMethod` and
+    `scVIVAMethod` depend on `scviva-tools`, `scPoliMethod` on `scarches`.**
   - **`[fast-metrics]`** — `faiss-cpu`, `rapids-singlecell`.
 - W&B SDK version differences are isolated in helper methods inside
   `aggregation.py`. Don't sprinkle SDK-version checks elsewhere.

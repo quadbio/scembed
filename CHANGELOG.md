@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning][].
 
 ### Fixed
 - Drop the `lightning` git redirect: PyPI has restored the package, and the redirect's tag no longer resolves, which broke installing the `gpu` extra with uv
+- `ResolVIMethod` and `scVIVAMethod` use ResolVI and scVIVA from scviva-tools, where they now live, instead of scvi-tools' unmaintained copies; `scviva-tools` joins the `gpu` extra
 
 ## [v0.1.0]
 

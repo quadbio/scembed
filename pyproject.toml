@@ -46,9 +46,10 @@ optional-dependencies.fast-metrics = [
 ]
 
 optional-dependencies.gpu = [
-  "harmony-pytorch", # GPU-accelerated Harmony
-  "scarches>=0.6.1", # for scPoli
+  "harmony-pytorch",                             # GPU-accelerated Harmony
+  "scarches>=0.6.1",                             # for scPoli
   "scvi-tools>=1.3",
+  "scviva-tools>=0.1.7; python_version>='3.12'", # ResolVI, scVIVA
   "torch>=2.8",
 ]
 # https://docs.pypi.org/project_metadata/#project-urls
