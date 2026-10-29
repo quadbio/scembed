@@ -109,6 +109,13 @@ python = [ "3.11", "3.14" ]
 features = [ "cpu", "gpu" ]
 dependency-groups = [ "dev", "test" ]
 
+# scarches 0.6.1 (latest release) imports `anndata.read`, removed in anndata 0.13;
+# fixed on master (theislab/scarches#277), as is a torch indexing bug in
+# scPoli.get_latent (theislab/scarches#267). Drop once a release includes both.
+
+[tool.uv.sources]
+scarches = { git = "https://github.com/theislab/scarches", rev = "d35cde61fff4dec6b86660817f4750fa35ff836d" }
+
 [tool.ruff]
 line-length = 120
 src = [ "src" ]
