@@ -18,7 +18,6 @@
 ## GPU-based Methods
 
 ```{eval-rst}
-.. module:: scembed.methods
 .. currentmodule:: scembed
 
 .. autosummary::

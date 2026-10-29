@@ -78,13 +78,13 @@ the source-of-truth map above.
 
 ## Development Commands
 
-Python 3.11 and 3.14 are the matrix endpoints (see
-`[tool.hatch.envs.hatch-test.matrix]`).
+Python 3.12 and 3.14 are the matrix endpoints, and 3.14 also runs with
+pre-release dependencies (see `[tool.hatch.envs.hatch-test.matrix]`).
 
 ```bash
 uv sync                             # install with default groups
 uvx hatch test                      # run tests on highest matrix Python
-uvx hatch test --all                # full matrix (3.11, 3.14)
+uvx hatch test --all                # full matrix
 uvx hatch run docs:build            # build Sphinx docs
 uvx pre-commit run --all-files      # lint + format (biome, pyproject-fmt, ruff)
 ```

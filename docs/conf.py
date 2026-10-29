@@ -2,7 +2,7 @@
 
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# https://www.sphinx-doc.org/page/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 import shutil
@@ -58,10 +58,11 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinxcontrib.bibtex",
     "sphinx_autodoc_typehints",
-    "sphinx_tabs.tabs",
     "sphinxcontrib.katex",
+    "sphinx_design",
     "IPython.sphinxext.ipython_console_highlighting",
     "sphinxext.opengraph",
+    "scverse_misc.sphinx_ext",
     *[p.stem for p in (HERE / "extensions").glob("*.py")],
     "sphinx.ext.extlinks",
 ]
@@ -88,6 +89,7 @@ nb_output_stderr = "remove"
 nb_execution_mode = "off"
 nb_merge_streams = True
 typehints_defaults = "braces"
+always_use_bars_union = True  # use `|` instead of `Union` in types even when building with Python ≤3.14
 
 # Use prerendered KaTeX when a Node.js binary is available (RTD), fall back otherwise.
 katex_prerender = shutil.which(katex.NODEJS_BINARY) is not None
@@ -99,10 +101,9 @@ source_suffix = {
 }
 
 intersphinx_mapping = {
-    # TODO: revert to https://docs.python.org/3 once RTD supports Python 3.14
-    "python": ("https://docs.python.org/3.13", None),
-    "anndata": ("https://anndata.readthedocs.io/en/stable/", None),
-    "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
+    "python": ("https://docs.python.org/3", None),
+    "anndata": ("https://anndata.scverse.org/en/stable/", None),
+    "scanpy": ("https://scanpy.scverse.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
 }
 
