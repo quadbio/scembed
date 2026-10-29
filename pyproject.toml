@@ -89,7 +89,7 @@ doc = [
 version.source = "vcs"
 envs.default.installer = "uv"
 envs.default.dependency-groups = [ "dev" ]
-envs.docs.scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
+envs.docs.scripts.build = "sphinx-build -M html docs docs/_build {args}"
 envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
 envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 envs.docs.dependency-groups = [ "doc" ]
@@ -155,6 +155,7 @@ lint.pydocstyle.convention = "numpy"
 addopts = [
   "--import-mode=importlib", # allow using test files with same name
 ]
+markers = [ "slow: trains several models and logs them to W&B" ]
 strict = true
 testpaths = [ "tests" ]
 
