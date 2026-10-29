@@ -938,7 +938,7 @@ class SIMVIMethod(BaseIntegrationMethod):
         attention_heads: int | None = None,
         max_epochs: int | None = None,
         train_size: float | None = None,
-        batch_size: int | None = None,
+        batch_size: int | None = 500,
         anneal_epochs: int | None = None,
         mae_epochs: int | None = None,
         lr: float | None = None,
@@ -990,7 +990,9 @@ class SIMVIMethod(BaseIntegrationMethod):
         train_size
             Fraction of cells used for training.
         batch_size
-            Mini-batch size. SIMVI is transductive: each step still encodes the full graph.
+            Mini-batch size; None trains full-batch. Defaults to the tutorial's 500, not SIMVI's None: full-batch
+            training builds an n_cells x n_cells MMD kernel and runs out of GPU memory at tens of thousands of cells.
+            SIMVI is transductive: each step still encodes the full graph.
         anneal_epochs
             Number of KL annealing epochs.
         mae_epochs
