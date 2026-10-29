@@ -177,7 +177,7 @@ class scVIMethod(BaseIntegrationMethod):
         adata_hvg = self.setup_state["adata_prepared"]
 
         # Setup scVI with counts layer
-        scvi.model.SCVI.setup_anndata(adata_hvg, layer=self.counts_layer, batch_key=self.batch_key)
+        scvi.model.SCVI.setup_anndata(adata_hvg, layer=self._scvi_layer, batch_key=self.batch_key)
 
         # Prepare scVI model parameters, filtering out None values
         scvi_params = self._filter_none_params(
@@ -531,7 +531,7 @@ class scPoliMethod(BaseIntegrationMethod):
         adata_prepared = self._prepare_hvg()
 
         # Note: scPoli expects raw counts in .X, so we need to copy from layer
-        adata_prepared.X = adata_prepared.layers[self.counts_layer].copy()
+        adata_prepared.X = self._get_counts(adata_prepared).copy()
 
         # Store the prepared data for use in both fit() and transform()
         self.setup_state["adata_prepared"] = adata_prepared
@@ -825,7 +825,7 @@ class ResolVIMethod(BaseIntegrationMethod):
         # ResolVI setup_anndata will automatically compute spatial neighbors if missing
         ResolVI.setup_anndata(
             adata_hvg,
-            layer=self.counts_layer,
+            layer=self._scvi_layer,
             batch_key=self.batch_key,
             labels_key=self.cell_type_key if self.semisupervised else None,
             prepare_data_kwargs={
@@ -1084,7 +1084,7 @@ class SIMVIMethod(BaseIntegrationMethod):
         check_deps("simvi", "torch-geometric")
         from simvi.model import SimVI
 
-        SimVI.setup_anndata(adata_prepared, layer=self.counts_layer, batch_key=self.batch_key)
+        SimVI.setup_anndata(adata_prepared, layer=self._scvi_layer, batch_key=self.batch_key)
         self.edge_index = SimVI.extract_edge_index(
             adata_prepared,
             batch_key=self.slice_key or self.batch_key,
@@ -1351,7 +1351,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         # Step 3: Setup scVIVA data registration
         SCVIVA.setup_anndata(
             adata_hvg,
-            layer=self.counts_layer,
+            layer=self._scvi_layer,
             batch_key=self.batch_key,
             sample_key=self.batch_key,
             labels_key=self.cell_type_key,

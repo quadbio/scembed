@@ -165,7 +165,7 @@ class LIGERMethod(BaseIntegrationMethod):
             return
 
         # Setup raw counts for LIGER
-        self.adata.X = self.adata.layers[self.counts_layer].copy()
+        self.adata.X = self._get_counts(self.adata).copy()
 
         # Use base class helper for HVG subsetting
         adata_hvg = self._prepare_hvg()
