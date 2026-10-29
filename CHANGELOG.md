@@ -11,9 +11,11 @@ and this project adheres to [Semantic Versioning][].
 ## [Unreleased]
 
 ### Added
+
 - `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI ported to current scvi-tools, installed separately
 
 ### Fixed
+
 - Drop the `lightning` git redirect: PyPI has restored the package, and the redirect's tag no longer resolves, which broke installing the `gpu` extra with uv
 - `ResolVIMethod` and `scVIVAMethod` use ResolVI and scVIVA from scviva-tools, where they now live, instead of scvi-tools' unmaintained copies; `scviva-tools` joins the `gpu` extra
 - Require `pandas<3`: scib-metrics' `Benchmarker.get_results`, used by `IntegrationEvaluator` and `scIBAggregator`, and scarches' scPoli fail on pandas 3
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning][].
 ## [v0.1.0]
 
 ### Added
+
 - Basic tests for the base class, gpu and cpu-based methods {pr}`2`
 - Added tests for evaluation and aggregatio modules {pr}`3`
 - Added basic tutorial {pr}`3`
