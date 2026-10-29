@@ -155,6 +155,38 @@ class scIBAggregator:
         # Config is already at the top level
         return config_dict
 
+    @staticmethod
+    def _nest_dotted_keys(summary_dict: dict) -> dict:
+        """Nest dotted W&B summary keys.
+
+        The W&B API returns a nested summary entry such as ``{'scib': {'BRAS': 0.5}}``
+        flattened as ``{'scib.BRAS': 0.5}``. Keys that would clash with an existing
+        non-dict value stay flat.
+
+        Parameters
+        ----------
+        summary_dict
+            Parsed summary dictionary
+
+        Returns
+        -------
+        Summary dictionary with dotted keys nested
+        """
+        nested: dict = {}
+        for key, value in sorted(summary_dict.items(), key=lambda item: item[0].count(".")):
+            *parents, leaf = key.split(".")
+            target = nested
+            for part in parents:
+                target = target.setdefault(part, {})
+                if not isinstance(target, dict):
+                    break
+            else:
+                if leaf not in target:
+                    target[leaf] = value
+                    continue
+            nested[key] = value
+        return nested
+
     def fetch_runs(self) -> None:
         """Fetch runs from WandB and process into internal storage."""
         logger.info("Fetching runs from %s/%s...", self.entity, self.project)
@@ -221,7 +253,7 @@ class scIBAggregator:
             logger.warning("Skipping run %s due to invalid summary type: %s", run.id, type(summary_dict).__name__)
             return None
 
-        run_data.update(summary_dict)
+        run_data.update(self._nest_dotted_keys(summary_dict))
 
         # Parse config
         try:
