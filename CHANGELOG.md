@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning][].
 - Require `pandas<3`: scib-metrics' `Benchmarker.get_results`, used by `IntegrationEvaluator` and `scIBAggregator`, and scarches' scPoli fail on pandas 3
 - Install `scarches` from master in development and CI, for anndata 0.13 and a scPoli latent-space bug; PyPI installs keep the latest release
 - `scIBAggregator` reads scIB metrics again: the W&B API now returns nested summary entries as dotted keys (`scib.BRAS`), so every run was dropped as missing metrics
-- `HarmonyMethod` takes `n_jobs` and `use_gpu`, defaulting to the CPUs this process may use and to CUDA availability; harmony-pytorch's own default uses every physical core of the machine, which fails under Slurm (OMP error #34)
+- `HarmonyMethod` takes `n_jobs` and `use_gpu`, defaulting to `torch.get_num_threads()` and to CUDA availability; harmony-pytorch's own default uses every physical core of the machine, which fails under Slurm (OMP error #34)
 
 ## [v0.1.0]
 

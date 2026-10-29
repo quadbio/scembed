@@ -7,7 +7,7 @@ from typing import Literal
 
 from scembed.check import check_deps
 from scembed.logging import logger
-from scembed.utils import _available_cpus, _get_wandb_logger
+from scembed.utils import _get_wandb_logger
 
 from .base import BaseIntegrationMethod
 
@@ -39,7 +39,8 @@ class HarmonyMethod(BaseIntegrationMethod):
         theta
             Diversity clustering penalty parameter.
         n_jobs
-            Number of CPU threads. If None, uses the CPUs this process may run on; Harmony's own default
+            Number of CPU threads. If None, uses torch's current setting (``torch.get_num_threads()``,
+            which follows ``OMP_NUM_THREADS`` and the CPUs this process may run on); Harmony's own default
             takes every physical core of the machine, ignoring e.g. a Slurm allocation.
         use_gpu
             Whether to run on the GPU. If None, uses it when CUDA is available.
@@ -65,7 +66,7 @@ class HarmonyMethod(BaseIntegrationMethod):
         harmony_params = self._filter_none_params(
             {
                 "theta": self.theta,
-                "n_jobs": self.n_jobs if self.n_jobs is not None else _available_cpus(),
+                "n_jobs": self.n_jobs if self.n_jobs is not None else torch.get_num_threads(),
                 "use_gpu": self.use_gpu if self.use_gpu is not None else torch.cuda.is_available(),
             }
         )
