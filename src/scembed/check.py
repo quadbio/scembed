@@ -74,7 +74,11 @@ INSTALL_HINTS = types.SimpleNamespace(
     # Integration methods - GPU
     harmony_pytorch="To use GPU-accelerated Harmony, install harmony-pytorch: pip install harmony-pytorch",
     scvi_tools="To use scVI-tools methods (scVI, scANVI), install scvi-tools: pip install scvi-tools",
+    scviva_tools="To use ResolVI or scVIVA, install scviva-tools: pip install scviva-tools",
     scarches="To use scPoli integration, install scarches: pip install scarches",
+    simvi="To use SIMVI, install its port to scvi-tools>=1.5: pip install git+https://github.com/quadbio/simvi "
+    "(the PyPI release, 0.1.2, requires scvi-tools<=0.16.2)",
+    torch_geometric="To use SIMVI, install torch-geometric: pip install torch-geometric",
     # Data analysis and visualization
     lightning="To use PyTorch Lightning loggers, install lightning: pip install lightning",
 )
@@ -94,7 +98,14 @@ CHECKERS = {
         "harmony", package_name="harmony-pytorch", vmin=None, install_hint=INSTALL_HINTS.harmony_pytorch
     ),
     "scvi-tools": Checker("scvi", package_name="scvi-tools", vmin="1.0.0", install_hint=INSTALL_HINTS.scvi_tools),
+    "scviva-tools": Checker(
+        "scviva", package_name="scviva-tools", vmin="0.1.7", install_hint=INSTALL_HINTS.scviva_tools
+    ),
     "scarches": Checker("scarches", vmin="0.6.0", install_hint=INSTALL_HINTS.scarches),
+    "simvi": Checker("simvi", vmin=None, install_hint=INSTALL_HINTS.simvi),
+    "torch-geometric": Checker(
+        "torch_geometric", package_name="torch-geometric", vmin=None, install_hint=INSTALL_HINTS.torch_geometric
+    ),
     # Data analysis and visualization
     "lightning": Checker("lightning", package_name="lightning", vmin=None, install_hint=INSTALL_HINTS.lightning),
 }

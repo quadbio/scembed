@@ -2,7 +2,7 @@
 
 `scembed` is a Python package for benchmarking single-cell data integration
 methods with [scIB metrics][]. It wraps common integration tools (Harmony,
-LIGER, Scanorama, scVI, scANVI, scPoli, ResolVI, scVIVA), drives benchmarks
+LIGER, Scanorama, scVI, scANVI, scPoli, ResolVI, scVIVA, SIMVI), drives benchmarks
 through [scIB metrics][], and aggregates W&B sweep results produced via
 [slurm_sweep][].
 
@@ -23,21 +23,21 @@ workflow lives in `REVIEW_GUIDE.md`.
 
 ## Where To Find What
 
-| Topic | Source of truth |
-|-------|-----------------|
-| Method registry / dispatch | `src/scembed/factory.py` (`get_method_instance`) |
-| Method base class & embedding-key convention | `src/scembed/methods/base.py` (`BaseIntegrationMethod`) |
-| CPU-only methods (HVG, LIGER, Scanorama, precomputed) | `src/scembed/methods/cpu_methods.py` |
-| GPU/torch methods (Harmony, scVI, scANVI, scPoli, ResolVI, scVIVA) | `src/scembed/methods/gpu_methods.py` |
-| scIB benchmarking | `src/scembed/evaluation.py` (`IntegrationEvaluator`) |
-| W&B sweep aggregation | `src/scembed/aggregation.py` (`scIBAggregator`) |
-| Optional-dependency gating | `src/scembed/check.py` (`check_deps`, `CHECKERS`) |
-| Public API surface | `src/scembed/__init__.py` |
-| Contributor guide | `docs/contributing.md` |
-| Usage examples | `docs/notebooks/basic_usage.ipynb` |
-| PR review workflow & risk areas | `REVIEW_GUIDE.md` |
-| Test fixtures | `tests/conftest.py` |
-| Sweep driver | <https://github.com/quadbio/slurm_sweep> |
+| Topic                                                              | Source of truth                                         |
+| ------------------------------------------------------------------ | ------------------------------------------------------- |
+| Method registry / dispatch                                         | `src/scembed/factory.py` (`get_method_instance`)        |
+| Method base class & embedding-key convention                       | `src/scembed/methods/base.py` (`BaseIntegrationMethod`) |
+| CPU-only methods (HVG, LIGER, Scanorama, precomputed)              | `src/scembed/methods/cpu_methods.py`                    |
+| GPU/torch methods (Harmony, scVI, scANVI, scPoli, ResolVI, scVIVA) | `src/scembed/methods/gpu_methods.py`                    |
+| scIB benchmarking                                                  | `src/scembed/evaluation.py` (`IntegrationEvaluator`)    |
+| W&B sweep aggregation                                              | `src/scembed/aggregation.py` (`scIBAggregator`)         |
+| Optional-dependency gating                                         | `src/scembed/check.py` (`check_deps`, `CHECKERS`)       |
+| Public API surface                                                 | `src/scembed/__init__.py`                               |
+| Contributor guide                                                  | `docs/contributing.md`                                  |
+| Usage examples                                                     | `docs/notebooks/basic_usage.ipynb`                      |
+| PR review workflow & risk areas                                    | `REVIEW_GUIDE.md`                                       |
+| Test fixtures                                                      | `tests/conftest.py`                                     |
+| Sweep driver                                                       | <https://github.com/quadbio/slurm_sweep>                |
 
 ## Review Guidelines
 
@@ -60,10 +60,12 @@ the source-of-truth map above.
   - **`[cpu]`** — `pyliger`, `scanorama`. Used by `LIGERMethod`,
     `ScanoramaMethod`. (`HVGMethod` and `PrecomputedEmbeddingMethod` need
     no extra.)
-  - **`[gpu]`** — `harmony-pytorch`, `scvi-tools`, `scarches`, `torch`. Used
-    by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`, `scVIVAMethod`,
-    `ResolVIMethod`, `scPoliMethod`. **`scPoliMethod` depends on `scarches`,
-    not `scvi-tools`.**
+  - **`[gpu]`** — `harmony-pytorch`, `scvi-tools`, `scviva-tools`, `scarches`,
+    `torch`. Used by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`,
+    `scVIVAMethod`, `ResolVIMethod`, `scPoliMethod`. **`ResolVIMethod` and
+    `scVIVAMethod` depend on `scviva-tools`, `scPoliMethod` on `scarches`.**
+  - **No extra** — `SIMVIMethod` needs `simvi` from quadbio/simvi, a port
+    to current scvi-tools (not on PyPI), and `torch-geometric`.
   - **`[fast-metrics]`** — `faiss-cpu`, `rapids-singlecell`.
 - W&B SDK version differences are isolated in helper methods inside
   `aggregation.py`. Don't sprinkle SDK-version checks elsewhere.
@@ -76,13 +78,13 @@ the source-of-truth map above.
 
 ## Development Commands
 
-Python 3.11 and 3.14 are the matrix endpoints (see
-`[tool.hatch.envs.hatch-test.matrix]`).
+Python 3.12 and 3.14 are the matrix endpoints, and 3.14 also runs with
+pre-release dependencies (see `[tool.hatch.envs.hatch-test.matrix]`).
 
 ```bash
 uv sync                             # install with default groups
 uvx hatch test                      # run tests on highest matrix Python
-uvx hatch test --all                # full matrix (3.11, 3.14)
+uvx hatch test --all                # full matrix
 uvx hatch run docs:build            # build Sphinx docs
 uvx pre-commit run --all-files      # lint + format (biome, pyproject-fmt, ruff)
 ```

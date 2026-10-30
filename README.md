@@ -21,6 +21,7 @@
 Single-cell RNA-sequencing (scRNA-seq) 🧪 measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
 
 ## 🎯 Overview
+
 Here, we use `slurm_sweep` to efficiently parallelize and track different data integration approaches, and we compare their performance in terms of [scIB metrics](https://scib-metrics.readthedocs.io/en/stable/) ([Luecken et al., 2022](https://doi.org/10.1038/s41592-021-01336-8)). For each data integration method, we compute a shared latent space, quantify integration performance in terms of batch correction and bio conservation, visualize the latent space with UMAP, store the model and embedding coordinates, and store all relevant data on wandb, so that we can retrieve it after the sweep.
 
 `scembed` consists of shallow wrappers around commonly used integration tools, a class to facilitate scIB comparisons, and another class to retrieve and aggregate sweep results.
@@ -85,7 +86,6 @@ Please use our [zenodo][] entry to cite this software.
 [changelog]: https://scembed.readthedocs.io/en/latest/changelog.html
 [api documentation]: https://scembed.readthedocs.io/en/latest/api.html
 [pypi]: https://pypi.org/project/scembed
-
 [coverage]: https://codecov.io/gh/quadbio/scembed
 [pre-commit]: https://results.pre-commit.ci/latest/github/quadbio/scembed/main
 [downloads]: https://pepy.tech/project/scembed

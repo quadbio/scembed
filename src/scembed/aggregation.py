@@ -4,7 +4,6 @@ import json
 from dataclasses import fields
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -16,10 +15,6 @@ from tqdm import tqdm
 
 from scembed.logging import logger
 from scembed.utils import _download_artifact_by_run_id
-
-# Allowed scalar types for filtering
-AllowedScalar = Union[int, float, str, bool]
-AllowedFilterValue = Union[AllowedScalar, list[AllowedScalar]]
 
 
 class scIBAggregator:
@@ -160,61 +155,48 @@ class scIBAggregator:
         # Config is already at the top level
         return config_dict
 
-    def _filter_params(self, target_key, target_value) -> None:
-        """Filter runs to match certain parameter criteria."""
-        keep_runs = []
-        discard_runs = []
+    @staticmethod
+    def _nest_dotted_keys(summary_dict: dict) -> dict:
+        """Nest dotted W&B summary keys.
 
-        for idx, row in self.raw_df.iterrows():
-            # Get the config. Missing config runs will be filtered out later in _process_runs()
-            config = row.get("config")
-            if config is None or not isinstance(config, dict):
-                continue
+        The W&B API returns a nested summary entry such as ``{'scib': {'BRAS': 0.5}}``
+        flattened as ``{'scib.BRAS': 0.5}``. Keys that would clash with an existing
+        non-dict value stay flat.
 
-            # Get the value of the target key in the config. Can be a dict with 'value' key or direct value
-            # Keeping this here for safety
-            param_value = config.get(target_key, None)
-            if isinstance(param_value, dict):
-                param_value = param_value["value"]
+        Parameters
+        ----------
+        summary_dict
+            Parsed summary dictionary
 
-            if param_value is None:
-                if self.filter_allow_none:
-                    keep_runs.append(idx)
-                else:
-                    discard_runs.append(idx)
-                continue
-
-            # If the desired target_value is not a list, just check for a match
-            if not isinstance(target_value, list):
-                if param_value == target_value:
-                    keep_runs.append(idx)
-                else:
-                    discard_runs.append(idx)
-            # If the desired target_value is a list, check if param_value is in that list
+        Returns
+        -------
+        Summary dictionary with dotted keys nested
+        """
+        nested: dict = {}
+        for key, value in sorted(summary_dict.items(), key=lambda item: item[0].count(".")):
+            *parents, leaf = key.split(".")
+            target = nested
+            for part in parents:
+                target = target.setdefault(part, {})
+                if not isinstance(target, dict):
+                    break
             else:
-                if any([param_value == x for x in target_value]):
-                    keep_runs.append(idx)
-                else:
-                    discard_runs.append(idx)
+                if leaf not in target:
+                    target[leaf] = value
+                    continue
+            nested[key] = value
+        return nested
 
-        if discard_runs:
-            logger.info(
-                "Masked %d runs not matching %s=%s. %d runs remain.",
-                len(discard_runs),
-                target_key,
-                target_value,
-                len(keep_runs),
-            )
+    def fetch_runs(self, filters: dict | None = None) -> None:
+        """Fetch runs from WandB and process into internal storage.
 
-        self.raw_df = self.raw_df.loc[keep_runs].copy()
-
-        if self.raw_df.empty:
-            logger.warning("All runs were masked, please relax the filtering constraints.")
-
-    def fetch_runs(
-        self, filter_params: dict[str, AllowedFilterValue] | None = None, filter_allow_none: bool = True
-    ) -> None:
-        """Fetch runs from WandB and process into internal storage."""
+        Parameters
+        ----------
+        filters
+            MongoDB-style query passed to ``wandb.Api.runs``, which filters runs on the server.
+            Config keys are addressed by their logged path: for runs logged by slurm_sweep, e.g.
+            ``{"config.config.method": {"$in": ["scvi", "harmony"]}}``. If None, fetch all runs.
+        """
         logger.info("Fetching runs from %s/%s...", self.entity, self.project)
 
         # Reset state for fresh fetch
@@ -226,15 +208,10 @@ class scIBAggregator:
         self.missing_metrics_runs = []
         self.available_scib_metrics = set()
 
-        # Set filtering options
-        self.filter_params = filter_params
-        self.filter_allow_none = filter_allow_none
-
         # Initialize WandB API
         api = wandb.Api()
 
-        # Fetch all runs for the project
-        runs = api.runs(f"{self.entity}/{self.project}")
+        runs = api.runs(f"{self.entity}/{self.project}", filters=filters)
 
         # Extract parameter configurations and final results
         data = []
@@ -248,11 +225,6 @@ class scIBAggregator:
         self.n_runs_fetched = len(self.raw_df)
 
         logger.info("Fetched %d runs", self.n_runs_fetched)
-
-        # Filter the data
-        if self.filter_params is not None:
-            for target_key, target_value in self.filter_params.items():
-                self._filter_params(target_key=target_key, target_value=target_value)
 
         # Process the data
         self._process_runs()
@@ -288,7 +260,7 @@ class scIBAggregator:
             logger.warning("Skipping run %s due to invalid summary type: %s", run.id, type(summary_dict).__name__)
             return None
 
-        run_data.update(summary_dict)
+        run_data.update(self._nest_dotted_keys(summary_dict))
 
         # Parse config
         try:

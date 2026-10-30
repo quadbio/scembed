@@ -19,7 +19,14 @@ class HarmonyMethod(BaseIntegrationMethod):
     sensitive and accurate integration of single-cell data.
     """
 
-    def __init__(self, adata, theta: float | None = None, **kwargs):
+    def __init__(
+        self,
+        adata,
+        theta: float | None = None,
+        n_jobs: int | None = None,
+        use_gpu: bool | None = None,
+        **kwargs,
+    ):
         """
         Initialize Harmony method.
 
@@ -31,9 +38,17 @@ class HarmonyMethod(BaseIntegrationMethod):
             Annotated data object to integrate.
         theta
             Diversity clustering penalty parameter.
+        n_jobs
+            Number of CPU threads. If None, uses torch's current setting (``torch.get_num_threads()``,
+            which follows ``OMP_NUM_THREADS`` and the CPUs this process may run on); Harmony's own default
+            takes every physical core of the machine, ignoring e.g. a Slurm allocation.
+        use_gpu
+            Whether to run on the GPU. If None, uses it when CUDA is available.
         """
-        super().__init__(adata, theta=theta, **kwargs)
+        super().__init__(adata, theta=theta, n_jobs=n_jobs, use_gpu=use_gpu, **kwargs)
         self.theta = theta
+        self.n_jobs = n_jobs
+        self.use_gpu = use_gpu
 
     def fit(self):
         """Fit Harmony - no explicit fitting needed."""
@@ -44,12 +59,15 @@ class HarmonyMethod(BaseIntegrationMethod):
     def transform(self):
         """Apply Harmony integration."""
         check_deps("harmony-pytorch")
+        import torch
         from harmony import harmonize
 
         # Prepare harmony parameters, filtering out None values
         harmony_params = self._filter_none_params(
             {
                 "theta": self.theta,
+                "n_jobs": self.n_jobs if self.n_jobs is not None else torch.get_num_threads(),
+                "use_gpu": self.use_gpu if self.use_gpu is not None else torch.cuda.is_available(),
             }
         )
 
@@ -177,7 +195,7 @@ class scVIMethod(BaseIntegrationMethod):
         adata_hvg = self.setup_state["adata_prepared"]
 
         # Setup scVI with counts layer
-        scvi.model.SCVI.setup_anndata(adata_hvg, layer=self.counts_layer, batch_key=self.batch_key)
+        scvi.model.SCVI.setup_anndata(adata_hvg, layer=self._scvi_layer, batch_key=self.batch_key)
 
         # Prepare scVI model parameters, filtering out None values
         scvi_params = self._filter_none_params(
@@ -531,7 +549,7 @@ class scPoliMethod(BaseIntegrationMethod):
         adata_prepared = self._prepare_hvg()
 
         # Note: scPoli expects raw counts in .X, so we need to copy from layer
-        adata_prepared.X = adata_prepared.layers[self.counts_layer].copy()
+        adata_prepared.X = self._get_counts(adata_prepared).copy()
 
         # Store the prepared data for use in both fit() and transform()
         self.setup_state["adata_prepared"] = adata_prepared
@@ -647,7 +665,7 @@ class ResolVIMethod(BaseIntegrationMethod):
     """ResolVI integration method for spatial transcriptomics.
 
     Wrapper around the ResolVI method :cite:`ergen2025resolvi` for addressing
-    noise and bias in spatial transcriptomics. Part of the scvi-tools framework
+    noise and bias in spatial transcriptomics. Part of scviva-tools, built on scvi-tools
     :cite:`gayoso2022python`.
     """
 
@@ -810,9 +828,10 @@ class ResolVIMethod(BaseIntegrationMethod):
         Note: ResolVI will compute spatial neighbors internally in `_prepare_data`, which is called from `setup_anndata`.
         To compute neighbors, it will attempt to use rapids_singlecell and fall back to scanpy if necessary. It simply computes
         `n_neighbors` + 5 (by default, 15) neighbors in the given spatial representation, treating each batch separately.
+        scviva-tools 0.1.8 and earlier compute these neighbors incorrectly; YosefLab/scviva-tools#48 fixes it.
         """
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import ResolVI
 
         # Ensure data is setup
         self.setup()
@@ -822,9 +841,9 @@ class ResolVIMethod(BaseIntegrationMethod):
 
         # Setup ResolVI data registration
         # ResolVI setup_anndata will automatically compute spatial neighbors if missing
-        scvi.external.RESOLVI.setup_anndata(
+        ResolVI.setup_anndata(
             adata_hvg,
-            layer=self.counts_layer,
+            layer=self._scvi_layer,
             batch_key=self.batch_key,
             labels_key=self.cell_type_key if self.semisupervised else None,
             prepare_data_kwargs={
@@ -854,7 +873,7 @@ class ResolVIMethod(BaseIntegrationMethod):
         )
 
         # Create ResolVI model
-        self.model = scvi.external.RESOLVI(
+        self.model = ResolVI(
             adata_hvg,
             **model_params,
         )
@@ -894,8 +913,8 @@ class ResolVIMethod(BaseIntegrationMethod):
 
     def _load_from_disk(self, model_path: Path) -> None:
         """Load ResolVI model from disk."""
-        check_deps("scvi-tools")
-        self._load_scvi_model(model_path, "scvi.external.RESOLVI")
+        check_deps("scviva-tools")
+        self._load_scvi_model(model_path, "scviva.model.ResolVI")
 
     def save_model(self, path: Path) -> Path | None:
         """Save ResolVI model."""
@@ -907,12 +926,239 @@ class ResolVIMethod(BaseIntegrationMethod):
         return model_dir
 
 
+class SIMVIMethod(BaseIntegrationMethod):
+    """SIMVI integration method for spatial omics.
+
+    Wrapper around SIMVI :cite:`dong2025simvi`, which splits each cell's representation into an intrinsic latent
+    and a neighbour-induced latent. The intrinsic latent is the embedding; the neighbour-induced one is stored
+    under ``f"{embedding_key}_spatial"``.
+
+    SIMVI's only release requires scvi-tools<=0.16.2, so this wrapper needs its port to current scvi-tools:
+    ``pip install git+https://github.com/quadbio/simvi``.
+    """
+
+    def __init__(
+        self,
+        adata,
+        n_hidden: int | None = None,
+        n_intrinsic: int | None = None,
+        n_spatial: int | None = None,
+        n_layers: int | None = None,
+        dropout_rate: float | None = None,
+        lam_mi: float | None = None,
+        reg_to_use: Literal["mmd", "mi"] | None = None,
+        dis_to_use: Literal["zinb", "nb"] | None = None,
+        noising_mode: Literal["default", "zero", "sampling"] | None = None,
+        permutation_rate: float | None = None,
+        var_eps: float | None = None,
+        kl_weight: float | None = None,
+        kl_gatweight: float | None = None,
+        attention_heads: int | None = None,
+        max_epochs: int | None = None,
+        train_size: float | None = None,
+        batch_size: int | None = 500,
+        anneal_epochs: int | None = None,
+        mae_epochs: int | None = None,
+        lr: float | None = None,
+        weight_decay: float | None = None,
+        device: str | None = None,
+        n_neighbors: int = 10,
+        slice_key: str | None = None,
+        **kwargs,
+    ):
+        """
+        Initialize SIMVI method.
+
+        For most input parameters, if None is passed, the default value from the SIMVI library will be used.
+
+        Parameters
+        ----------
+        adata
+            Annotated data object to integrate. Must contain spatial coordinates.
+        n_hidden
+            Number of nodes per hidden layer.
+        n_intrinsic
+            Dimensionality of the intrinsic latent (the embedding).
+        n_spatial
+            Dimensionality of the neighbour-induced latent.
+        n_layers
+            Number of decoder layers.
+        dropout_rate
+            Dropout rate for neural networks.
+        lam_mi
+            Weight of the independence penalty between the two latents.
+        reg_to_use
+            Independence penalty ('mmd', 'mi').
+        dis_to_use
+            Gene likelihood ('zinb', 'nb').
+        noising_mode
+            Input corruption during the first `mae_epochs` ('default', 'zero', 'sampling').
+        permutation_rate
+            Fraction of genes corrupted per step.
+        var_eps
+            Minimal variance of the variational posteriors.
+        kl_weight
+            KL weight of the intrinsic latent.
+        kl_gatweight
+            KL weight of the neighbour-induced latent.
+        attention_heads
+            Number of graph attention heads.
+        max_epochs
+            Number of training epochs.
+        train_size
+            Fraction of cells used for training.
+        batch_size
+            Mini-batch size; None trains full-batch. Defaults to the tutorial's 500, not SIMVI's None: full-batch
+            training builds an n_cells x n_cells MMD kernel and runs out of GPU memory at tens of thousands of cells.
+            SIMVI is transductive: each step still encodes the full graph.
+        anneal_epochs
+            Number of KL annealing epochs.
+        mae_epochs
+            Number of epochs with corrupted input.
+        lr
+            Learning rate.
+        weight_decay
+            Weight decay.
+        device
+            Torch device to train on. If None, uses CUDA when available, else CPU.
+        n_neighbors
+            Number of neighbours in the spatial kNN graph.
+        slice_key
+            Key in adata.obs for sections; the graph is built per section. If None, uses `batch_key`.
+        """
+        super().__init__(
+            adata,
+            validate_spatial=True,
+            n_hidden=n_hidden,
+            n_intrinsic=n_intrinsic,
+            n_spatial=n_spatial,
+            n_layers=n_layers,
+            dropout_rate=dropout_rate,
+            lam_mi=lam_mi,
+            reg_to_use=reg_to_use,
+            dis_to_use=dis_to_use,
+            noising_mode=noising_mode,
+            permutation_rate=permutation_rate,
+            var_eps=var_eps,
+            kl_weight=kl_weight,
+            kl_gatweight=kl_gatweight,
+            attention_heads=attention_heads,
+            max_epochs=max_epochs,
+            train_size=train_size,
+            batch_size=batch_size,
+            anneal_epochs=anneal_epochs,
+            mae_epochs=mae_epochs,
+            lr=lr,
+            weight_decay=weight_decay,
+            device=device,
+            n_neighbors=n_neighbors,
+            slice_key=slice_key,
+            **kwargs,
+        )
+
+        self.model_params = self._filter_none_params(
+            {
+                "n_hidden": n_hidden,
+                "n_intrinsic": n_intrinsic,
+                "n_spatial": n_spatial,
+                "n_layers": n_layers,
+                "dropout_rate": dropout_rate,
+                "lam_mi": lam_mi,
+                "reg_to_use": reg_to_use,
+                "dis_to_use": dis_to_use,
+                "noising_mode": noising_mode,
+                "permutation_rate": permutation_rate,
+                "var_eps": var_eps,
+                "kl_weight": kl_weight,
+                "kl_gatweight": kl_gatweight,
+                "attention_heads": attention_heads,
+            }
+        )
+        self.train_params = self._filter_none_params(
+            {
+                "max_epochs": max_epochs,
+                "train_size": train_size,
+                "batch_size": batch_size,
+                "anneal_epochs": anneal_epochs,
+                "mae_epochs": mae_epochs,
+                "lr": lr,
+                "weight_decay": weight_decay,
+            }
+        )
+        self.device = device
+        self.n_neighbors = n_neighbors
+        self.slice_key = slice_key
+        self.spatial_embedding_key = f"{self.embedding_key}_spatial"
+        self.edge_index = None
+        self.model = None
+
+    def setup(self, force_recompute: bool = False) -> None:
+        """Setup SIMVI-specific preprocessing."""
+        if self.setup_state["is_setup"] and not force_recompute:
+            return
+
+        adata_prepared = self._prepare_hvg()
+
+        check_deps("simvi", "torch-geometric")
+        from simvi.model import SimVI
+
+        SimVI.setup_anndata(adata_prepared, layer=self._scvi_layer, batch_key=self.batch_key)
+        self.edge_index = SimVI.extract_edge_index(
+            adata_prepared,
+            batch_key=self.slice_key or self.batch_key,
+            spatial_key=self.spatial_key,
+            n_neighbors=self.n_neighbors,
+        )
+
+        self.setup_state["adata_prepared"] = adata_prepared
+        self.setup_state["is_setup"] = True
+
+        logger.info("SIMVI data setup completed")
+
+    def fit(self):
+        """Fit SIMVI model."""
+        check_deps("simvi", "torch-geometric")
+        import torch
+        from simvi.model import SimVI
+
+        self.setup()
+
+        self.model = SimVI(self.setup_state["adata_prepared"], **self.model_params)
+        logger.info("Set up SIMVI model: %s", self.model)
+
+        device = self.device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.train(self.edge_index, device=device, **self.train_params)
+        self.is_fitted = True
+
+    def transform(self):
+        """Get SIMVI intrinsic and neighbour-induced latent representations."""
+        if not self.is_fitted or self.model is None:
+            raise ValueError("Model must be fitted before transform")
+
+        for key, kind in ((self.embedding_key, "intrinsic"), (self.spatial_embedding_key, "interaction")):
+            self.adata.obsm[key] = self.model.get_latent_representation(self.edge_index, representation_kind=kind)
+
+    def _load_from_disk(self, model_path: Path) -> None:
+        """Load SIMVI model from disk."""
+        check_deps("simvi", "torch-geometric")
+        self._load_scvi_model(model_path, "simvi.model.SimVI")
+
+    def save_model(self, path: Path) -> Path | None:
+        """Save SIMVI model."""
+        if self.model is None:
+            return None
+
+        model_dir = path / "simvi_model"
+        self.model.save(str(model_dir), overwrite=True)
+        return model_dir
+
+
 class scVIVAMethod(BaseIntegrationMethod):
     """scVIVA integration method for spatial transcriptomics with neighborhood modeling.
 
     Wrapper around the scVIVA method :cite:`levy2025scviva` for probabilistic
     framework for representation of cells and their environments in spatial
-    transcriptomics. Part of the scvi-tools framework :cite:`gayoso2022python`.
+    transcriptomics. Part of scviva-tools, built on scvi-tools :cite:`gayoso2022python`.
     """
 
     def __init__(
@@ -1025,8 +1271,8 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def setup(self, expression_embedding_key: str, force_recompute: bool = False) -> None:
         """Setup scVIVA-specific preprocessing."""
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import SCVIVA
 
         if self.setup_state["is_setup"] and not force_recompute:
             return
@@ -1048,7 +1294,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             preprocessing_params["k_nn"] = self.k_nn
 
         # Run preprocessing to compute neighborhoods
-        scvi.external.SCVIVA.preprocessing_anndata(**preprocessing_params)
+        SCVIVA.preprocessing_anndata(**preprocessing_params)
 
         # Store the prepared data
         self.setup_state["adata_prepared"] = adata_prepared
@@ -1058,8 +1304,8 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def fit(self):
         """Fit scVIVA model with expression embedding computation or using pre-computed embeddings."""
-        check_deps("scvi-tools")
-        import scvi
+        check_deps("scviva-tools")
+        from scviva.model import SCVIVA
 
         # Step 1: Handle expression embeddings - either compute or use pre-computed
         if self.expression_embedding_key is not None:
@@ -1121,9 +1367,9 @@ class scVIVAMethod(BaseIntegrationMethod):
         adata_hvg = self.setup_state["adata_prepared"]
 
         # Step 3: Setup scVIVA data registration
-        scvi.external.SCVIVA.setup_anndata(
+        SCVIVA.setup_anndata(
             adata_hvg,
-            layer=self.counts_layer,
+            layer=self._scvi_layer,
             batch_key=self.batch_key,
             sample_key=self.batch_key,
             labels_key=self.cell_type_key,
@@ -1145,7 +1391,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             }
         )
 
-        self.model = scvi.external.SCVIVA(adata_hvg, **model_params)
+        self.model = SCVIVA(adata_hvg, **model_params)
         logger.info("Set up scVIVA model: %s", self.model)
 
         # Prepare training parameters, filtering out None values
@@ -1199,7 +1445,7 @@ class scVIVAMethod(BaseIntegrationMethod):
 
     def _load_from_disk(self, model_path: Path) -> None:
         """Load scVIVA model from disk."""
-        check_deps("scvi-tools")
+        check_deps("scviva-tools")
 
         # Determine which expression embedding key to use
         if self.expression_embedding_key is not None:
@@ -1214,4 +1460,4 @@ class scVIVAMethod(BaseIntegrationMethod):
                 f"Available keys: {list(self.adata.obsm.keys())}"
             )
 
-        self._load_scvi_model(model_path, "scvi.external.SCVIVA", expression_embedding_key=expression_embedding_key)
+        self._load_scvi_model(model_path, "scviva.model.SCVIVA", expression_embedding_key=expression_embedding_key)
