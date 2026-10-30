@@ -36,6 +36,7 @@ optional-dependencies.all = [
   "scembed[cpu,fast-metrics,gpu]",
 ]
 optional-dependencies.cpu = [
+  "bokeh<4",          # pyliger imports umap.plot, which needs bokeh<4; drop once welch-lab/pyliger#21 is released
   "pyliger>=0.2.4",
   "scanorama>=1.7.4",
   "setuptools<82",    # louvain (via pyliger) imports pkg_resources, removed in setuptools 82

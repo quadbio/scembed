@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning][].
 - `scIBAggregator` reads scIB metrics again: the W&B API now returns nested summary entries as dotted keys (`scib.BRAS`), so every run was dropped as missing metrics
 - `HarmonyMethod` takes `n_jobs` and `use_gpu`, defaulting to `torch.get_num_threads()` and to CUDA availability; harmony-pytorch's own default uses every physical core of the machine, which fails under Slurm (OMP error #34)
 - The `cpu` extra requires `setuptools<82`: louvain, via pyliger, imports `pkg_resources`; without it, importing torch after pyliger fails
+- The `cpu` extra requires `bokeh<4`: pyliger imports `umap.plot`, which fails on bokeh 4, so LIGER breaks at import
 
 ## [v0.1.0]
 
