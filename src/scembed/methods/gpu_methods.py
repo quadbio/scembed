@@ -933,8 +933,8 @@ class SIMVIMethod(BaseIntegrationMethod):
     and a neighbour-induced latent. The intrinsic latent is the embedding; the neighbour-induced one is stored
     under ``f"{embedding_key}_spatial"``.
 
-    SIMVI's only release requires scvi-tools<=0.16.2, so this wrapper needs a version of SIMVI ported to current
-    scvi-tools, installed separately.
+    SIMVI's only release requires scvi-tools<=0.16.2, so this wrapper needs its port to current scvi-tools:
+    ``pip install git+https://github.com/quadbio/simvi``.
     """
 
     def __init__(

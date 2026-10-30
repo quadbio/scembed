@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning][].
 
 ### Added
 
-- `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI ported to current scvi-tools, installed separately
+- `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI's port to current scvi-tools from [quadbio/simvi](https://github.com/quadbio/simvi)
 
 ### Fixed
 

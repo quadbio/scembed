@@ -64,8 +64,8 @@ the source-of-truth map above.
     `torch`. Used by `HarmonyMethod`, `scVIMethod`, `scANVIMethod`,
     `scVIVAMethod`, `ResolVIMethod`, `scPoliMethod`. **`ResolVIMethod` and
     `scVIVAMethod` depend on `scviva-tools`, `scPoliMethod` on `scarches`.**
-  - **No extra** — `SIMVIMethod` needs `simvi` ported to current
-    scvi-tools (not on PyPI) and `torch-geometric`, installed separately.
+  - **No extra** — `SIMVIMethod` needs `simvi` from quadbio/simvi, a port
+    to current scvi-tools (not on PyPI), and `torch-geometric`.
   - **`[fast-metrics]`** — `faiss-cpu`, `rapids-singlecell`.
 - W&B SDK version differences are isolated in helper methods inside
   `aggregation.py`. Don't sprinkle SDK-version checks elsewhere.
