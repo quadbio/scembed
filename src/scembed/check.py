@@ -76,8 +76,8 @@ INSTALL_HINTS = types.SimpleNamespace(
     scvi_tools="To use scVI-tools methods (scVI, scANVI), install scvi-tools: pip install scvi-tools",
     scviva_tools="To use ResolVI or scVIVA, install scviva-tools: pip install scviva-tools",
     scarches="To use scPoli integration, install scarches: pip install scarches",
-    simvi="To use SIMVI, install a version of SIMVI ported to scvi-tools>=1.5; "
-    "the PyPI release (0.1.2) requires scvi-tools<=0.16.2.",
+    simvi="To use SIMVI, install its port to scvi-tools>=1.5: pip install git+https://github.com/quadbio/simvi "
+    "(the PyPI release, 0.1.2, requires scvi-tools<=0.16.2)",
     torch_geometric="To use SIMVI, install torch-geometric: pip install torch-geometric",
     # Data analysis and visualization
     lightning="To use PyTorch Lightning loggers, install lightning: pip install lightning",
