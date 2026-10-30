@@ -187,8 +187,16 @@ class scIBAggregator:
             nested[key] = value
         return nested
 
-    def fetch_runs(self) -> None:
-        """Fetch runs from WandB and process into internal storage."""
+    def fetch_runs(self, filters: dict | None = None) -> None:
+        """Fetch runs from WandB and process into internal storage.
+
+        Parameters
+        ----------
+        filters
+            MongoDB-style query passed to ``wandb.Api.runs``, which filters runs on the server.
+            Config keys are addressed by their logged path: for runs logged by slurm_sweep, e.g.
+            ``{"config.config.method": {"$in": ["scvi", "harmony"]}}``. If None, fetch all runs.
+        """
         logger.info("Fetching runs from %s/%s...", self.entity, self.project)
 
         # Reset state for fresh fetch
@@ -203,8 +211,7 @@ class scIBAggregator:
         # Initialize WandB API
         api = wandb.Api()
 
-        # Fetch all runs for the project
-        runs = api.runs(f"{self.entity}/{self.project}")
+        runs = api.runs(f"{self.entity}/{self.project}", filters=filters)
 
         # Extract parameter configurations and final results
         data = []

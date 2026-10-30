@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning][].
 ### Added
 
 - `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI's port to current scvi-tools from [quadbio/simvi](https://github.com/quadbio/simvi)
+- `scIBAggregator.fetch_runs` takes `filters`, a W&B query that selects runs on the server, e.g. by method
 
 ### Fixed
 
