@@ -43,16 +43,16 @@ Use `AGENTS.md` for invariants, the source-of-truth map, and development command
 
 Test files mostly mirror module layout under `src/scembed/`:
 
-| Changed path | Tests to check |
-|---|---|
-| `src/scembed/methods/base.py` | `tests/methods/test_base.py` |
-| `src/scembed/methods/cpu_methods.py` | `tests/methods/test_cpu_methods.py` |
-| `src/scembed/methods/gpu_methods.py` | `tests/methods/test_gpu_methods.py` |
-| `src/scembed/evaluation.py` | `tests/test_evaluation.py` |
-| `src/scembed/aggregation.py` | `tests/test_aggregation.py` |
-| `src/scembed/factory.py` | `tests/test_basic.py` |
-| `src/scembed/utils.py` | `tests/test_basic.py`, `tests/test_retrival.py` |
-| `src/scembed/check.py` | `tests/test_basic.py` |
+| Changed path                         | Tests to check                                  |
+| ------------------------------------ | ----------------------------------------------- |
+| `src/scembed/methods/base.py`        | `tests/methods/test_base.py`                    |
+| `src/scembed/methods/cpu_methods.py` | `tests/methods/test_cpu_methods.py`             |
+| `src/scembed/methods/gpu_methods.py` | `tests/methods/test_gpu_methods.py`             |
+| `src/scembed/evaluation.py`          | `tests/test_evaluation.py`                      |
+| `src/scembed/aggregation.py`         | `tests/test_aggregation.py`                     |
+| `src/scembed/factory.py`             | `tests/test_basic.py`                           |
+| `src/scembed/utils.py`               | `tests/test_basic.py`, `tests/test_retrival.py` |
+| `src/scembed/check.py`               | `tests/test_basic.py`                           |
 
 Cross-cutting fixture changes: inspect `tests/conftest.py` and any test
 that uses the modified fixture.
@@ -74,7 +74,7 @@ Apply these checks whenever the PR touches code or tests.
 - Surface critical failures back to the author and ask them to fix before
   merge.
 
-**Modified tests.** Scrutinize *how* existing tests were changed.
+**Modified tests.** Scrutinize _how_ existing tests were changed.
 - PRs that only relax thresholds, remove assertions, delete cases, or loosen
   `parametrize` matrices are a red flag — tests-working-around-tests defeats
   the purpose.

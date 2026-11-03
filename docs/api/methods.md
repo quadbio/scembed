@@ -18,7 +18,6 @@
 ## GPU-based Methods
 
 ```{eval-rst}
-.. module:: scembed.methods
 .. currentmodule:: scembed
 
 .. autosummary::
@@ -26,6 +25,7 @@
 
     methods.HarmonyMethod
     methods.ResolVIMethod
+    methods.SIMVIMethod
     methods.scANVIMethod
     methods.scPoliMethod
     methods.scVIMethod

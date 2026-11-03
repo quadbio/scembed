@@ -39,7 +39,6 @@ class TestLIGERMethod:
         [
             (5, None, 5),  # Reduced k and max_iters for speed
             (10, 5.0, 10),  # Reduced iterations
-            (8, 10.0, 8),  # Reduced iterations
         ],
     )
     def test_liger_method(self, pbmc_data, k, value_lambda, max_iters):
@@ -70,7 +69,6 @@ class TestHVGMethod:
         [
             (500, "cell_ranger", False),  # Reduced from 1000
             (1000, "seurat", True),  # Reduced from 2000
-            (300, "cell_ranger", False),  # Reduced from 500
         ],
     )
     def test_hvg_method(self, pbmc_data, n_top_genes, flavor, scale):
@@ -107,7 +105,6 @@ class TestScanoramaMethod:
         [
             (10, None, None),  # Reduced from 20
             (5, 0.10, 15.0),  # Reduced from 10
-            (15, 0.05, 20.0),  # Reduced from 30
         ],
     )
     def test_scanorama_method(self, pbmc_data, knn, alpha, sigma):

@@ -41,6 +41,12 @@ class TestscIBAggregator:
             assert "scib_benchmarker" in data
             assert "other_logs" in data
 
+    def test_fetch_runs_filters(self):
+        """Test filtering runs on the W&B server."""
+        self.agg.fetch_runs(filters={"config.config.method": {"$in": ["harmony", "scvi"]}})
+
+        assert sorted(self.agg.available_methods) == ["harmony", "scvi"]
+
     @pytest.mark.parametrize("method", ["harmony", "scvi"])
     def test_get_method_runs(self, method):
         """Test retrieving runs for specific methods."""

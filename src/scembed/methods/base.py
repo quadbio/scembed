@@ -140,7 +140,7 @@ class BaseIntegrationMethod(ABC):
         if self.counts_layer != "X" and self.counts_layer not in adata.layers:
             logger.warning("Counts layer '%s' not found in adata.layers", self.counts_layer)
         else:
-            count_data = adata.layers[self.counts_layer] if self.counts_layer != "X" else adata.X
+            count_data = self._get_counts(adata)
             is_integer = np.all((count_data.data if issparse(count_data) else count_data) % 1 == 0)
 
             if not is_integer:
@@ -599,6 +599,15 @@ class BaseIntegrationMethod(ABC):
             return self.adata[:, self.adata.var[self.hvg_key]].copy()
         else:
             return self.adata.copy()
+
+    def _get_counts(self, adata: ad.AnnData):
+        """Count matrix of `adata`: `adata.X` if `counts_layer` is "X", else that layer."""
+        return adata.X if self.counts_layer == "X" else adata.layers[self.counts_layer]
+
+    @property
+    def _scvi_layer(self) -> str | None:
+        """`counts_layer` as scvi-tools' `layer` argument, which takes None for `adata.X`."""
+        return None if self.counts_layer == "X" else self.counts_layer
 
     def _filter_none_params(self, params: dict) -> dict:
         """Filter out None values to allow library defaults."""

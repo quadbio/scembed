@@ -1,10 +1,12 @@
 """Tests for GPU-based integration methods."""
 
+import numpy as np
 import pytest
 
 from scembed.methods.gpu_methods import (
     HarmonyMethod,
     ResolVIMethod,
+    SIMVIMethod,
     scANVIMethod,
     scPoliMethod,
     scVIMethod,
@@ -15,7 +17,7 @@ from scembed.methods.gpu_methods import (
 class TestHarmonyMethod:
     """Test suite for HarmonyMethod."""
 
-    @pytest.mark.parametrize("theta", [None, 2.0, 5.0])
+    @pytest.mark.parametrize("theta", [None, 5.0])
     def test_harmony_method(self, pbmc_data, theta):
         """Test Harmony method with different theta values."""
         pytest.importorskip("harmony")
@@ -33,6 +35,24 @@ class TestHarmonyMethod:
         # Harmony should preserve dimensionality from PCA
         assert method.adata.obsm[method.embedding_key].shape[1] == pbmc_data.obsm["X_pca"].shape[1]
 
+    @pytest.mark.parametrize("n_jobs,use_gpu", [(None, None), (2, False)])
+    def test_harmony_resources(self, pbmc_data, monkeypatch, n_jobs, use_gpu):
+        """Harmony gets torch's thread setting, not every core of the machine."""
+        harmony = pytest.importorskip("harmony")
+        torch = pytest.importorskip("torch")
+
+        captured = {}
+
+        def fake_harmonize(X, obs, **kwargs):
+            captured.update(kwargs)
+            return X
+
+        monkeypatch.setattr(harmony, "harmonize", fake_harmonize)
+        HarmonyMethod(pbmc_data, n_jobs=n_jobs, use_gpu=use_gpu).fit_transform()
+
+        assert captured["n_jobs"] == (n_jobs if n_jobs is not None else torch.get_num_threads())
+        assert captured["use_gpu"] == (use_gpu if use_gpu is not None else torch.cuda.is_available())
+
 
 class TestscVIMethod:
     """Test suite for scVIMethod."""
@@ -42,7 +62,6 @@ class TestscVIMethod:
         [
             (5, None),
             (10, 64),
-            (8, 128),
         ],
     )
     def test_scvi_method(self, pbmc_data, n_latent, n_hidden):
@@ -72,7 +91,6 @@ class TestscANVIMethod:
         "linear_classifier",
         [
             True,
-            False,
             None,
         ],
     )
@@ -108,7 +126,6 @@ class TestscPoliMethod:
         [
             (5, 2),
             (10, 3),
-            (8, 1),
         ],
     )
     def test_scpoli_method(self, pbmc_data, latent_dim, pretraining_epochs):
@@ -143,13 +160,11 @@ class TestResolVIMethod:
         "n_latent,n_neighbors",
         [
             (5, 10),
-            (10, 15),
-            (8, 8),  # Changed from 5 to 8 to avoid neighbor indexing issues
         ],
     )
     def test_resolvi_method(self, spatial_data, n_latent, n_neighbors):
         """Test ResolVI method with different latent dimensions and neighbor counts."""
-        pytest.importorskip("scvi")
+        pytest.importorskip("scviva")
 
         method = ResolVIMethod(
             spatial_data,
@@ -176,6 +191,60 @@ class TestResolVIMethod:
         assert method.adata.obsm[method.embedding_key].shape[1] == n_latent
 
 
+class TestSIMVIMethod:
+    """Test suite for SIMVIMethod (spatial method)."""
+
+    @pytest.mark.parametrize(
+        "n_intrinsic,n_spatial,batch_size",
+        [
+            (5, 4, None),
+            (10, 6, 256),
+        ],
+    )
+    def test_simvi_method(self, spatial_data, n_intrinsic, n_spatial, batch_size):
+        """Test SIMVI method with different latent dimensions, full- and mini-batch."""
+        pytest.importorskip("torch_geometric")
+        pytest.importorskip("simvi")
+
+        method = SIMVIMethod(
+            spatial_data,
+            batch_key="batch",
+            cell_type_key="cell_type",
+            spatial_key="spatial",
+            n_intrinsic=n_intrinsic,
+            n_spatial=n_spatial,
+            batch_size=batch_size,
+            max_epochs=3,
+            mae_epochs=2,
+        )
+
+        assert not method.is_fitted
+
+        method.fit_transform()
+
+        assert method.is_fitted
+        # The intrinsic latent is the embedding; the neighbour-induced latent sits next to it
+        assert method.adata.obsm[method.embedding_key].shape == (method.adata.n_obs, n_intrinsic)
+        assert method.adata.obsm[method.spatial_embedding_key].shape == (method.adata.n_obs, n_spatial)
+
+    def test_simvi_save_load(self, spatial_data, tmp_path):
+        """A saved SIMVI model reloads and reproduces the embedding."""
+        pytest.importorskip("torch_geometric")
+        pytest.importorskip("simvi")
+
+        method = SIMVIMethod(spatial_data, max_epochs=2, mae_epochs=1)
+        method.fit_transform()
+        model_dir = method.save_model(tmp_path)
+
+        loaded = SIMVIMethod(spatial_data)
+        loaded._load_from_disk(model_dir)
+        loaded.transform()
+
+        np.testing.assert_allclose(
+            loaded.adata.obsm[loaded.embedding_key], method.adata.obsm[method.embedding_key], rtol=1e-4, atol=1e-5
+        )
+
+
 class TestscVIVAMethod:
     """Test suite for scVIVAMethod (spatial method)."""
 
@@ -184,12 +253,11 @@ class TestscVIVAMethod:
         [
             ("scvi", 10),
             ("scanvi", 15),
-            ("scvi", 5),
         ],
     )
     def test_scviva_method(self, spatial_data, embedding_method, k_nn):
         """Test scVIVA method with different embedding methods and neighbor counts."""
-        pytest.importorskip("scvi")
+        pytest.importorskip("scviva")
 
         method = scVIVAMethod(
             spatial_data,

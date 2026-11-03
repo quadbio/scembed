@@ -133,6 +133,17 @@ class TestBaseIntegrationMethod:
         with pytest.raises(ValueError, match="Method must be fitted"):
             method.save_embedding()
 
+    @pytest.mark.parametrize("counts_layer,scvi_layer", [("counts", "counts"), ("X", None)])
+    def test_counts_layer(self, pbmc_data, counts_layer, scvi_layer):
+        """`counts_layer="X"` reads counts from `.X` and maps to scvi-tools' `layer=None`."""
+        if counts_layer == "X":
+            pbmc_data.X = pbmc_data.layers["counts"].copy()
+        method = ConcreteIntegrationMethod(pbmc_data, counts_layer=counts_layer)
+
+        counts = method._get_counts(method.adata)
+        assert (counts != pbmc_data.layers["counts"]).nnz == 0
+        assert method._scvi_layer == scvi_layer
+
     def test_get_model_info(self, pbmc_data):
         """Test model info retrieval."""
         method = ConcreteIntegrationMethod(pbmc_data, custom_param=123)
