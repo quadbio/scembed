@@ -24,24 +24,9 @@ def _add_categorical_annotation(adata: AnnData, key: str, labels: list[str], see
     adata.obs[key] = adata.obs[key].astype("category")
 
 
-@pytest.fixture
-def pbmc_data() -> AnnData:
-    """PBMC3k dataset for single-cell integration method testing.
-
-    Peripheral blood mononuclear cells from 10X Genomics (2,700 cells × 32,738 genes).
-    After filtering: ~2,700 cells × ~13,714 genes. Includes standard preprocessing:
-    normalization, log-transformation, HVG selection, and PCA.
-
-    Returns
-    -------
-    AnnData
-        Preprocessed PBMC3k dataset with test annotations:
-
-        - `.obs['batch']`: 3 batches for integration testing
-        - `.obs['cell_type']`: 5 immune cell types for evaluation
-        - `.layers['counts']`: Raw count data before normalization
-        - `.obsm['X_pca']`: PCA coordinates for downstream analysis
-    """
+@pytest.fixture(scope="session")
+def pbmc_data_session() -> AnnData:
+    """Preprocessed PBMC3k, built once per session; tests that modify it use `pbmc_data`."""
     adata = sc.datasets.pbmc3k()
 
     # Basic filtering and preprocessing
@@ -61,6 +46,27 @@ def pbmc_data() -> AnnData:
     sc.tl.pca(adata, mask_var="highly_variable")
 
     return adata
+
+
+@pytest.fixture
+def pbmc_data(pbmc_data_session) -> AnnData:
+    """PBMC3k dataset for single-cell integration method testing.
+
+    Peripheral blood mononuclear cells from 10X Genomics (2,700 cells × 32,738 genes).
+    After filtering: ~2,700 cells × ~13,714 genes. Includes standard preprocessing:
+    normalization, log-transformation, HVG selection, and PCA.
+
+    Returns
+    -------
+    AnnData
+        Preprocessed PBMC3k dataset with test annotations:
+
+        - `.obs['batch']`: 3 batches for integration testing
+        - `.obs['cell_type']`: 5 immune cell types for evaluation
+        - `.layers['counts']`: Raw count data before normalization
+        - `.obsm['X_pca']`: PCA coordinates for downstream analysis
+    """
+    return pbmc_data_session.copy()
 
 
 def _generate_spatial_coordinates_for_batch(batch_idx: int, n_cells: int, seed: int = 42) -> np.ndarray:
@@ -116,7 +122,7 @@ def spatial_data(pbmc_data) -> AnnData:
         - All features from pbmc_data fixture
         - `.obsm['spatial']`: Synthetic spatial coordinates per batch
     """
-    # Use the pbmc_data directly (pytest creates fresh instances per test)
+    # pbmc_data is a fresh copy per test
     adata = pbmc_data
 
     # Generate spatial coordinates for each batch and concatenate

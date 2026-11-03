@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning][].
 - `ResolVIMethod` and `scVIVAMethod` use ResolVI and scVIVA from scviva-tools, where they now live, instead of scvi-tools' unmaintained copies; `scviva-tools` joins the `gpu` extra
 - Require `pandas<3`: scib-metrics' `Benchmarker.get_results`, used by `IntegrationEvaluator` and `scIBAggregator`, and scarches' scPoli fail on pandas 3
 - Install `scarches` from master in development and CI, for anndata 0.13 and a scPoli latent-space bug; PyPI installs keep the latest release
+- Build `annoy` (via scanorama) without `-march=native` in development and CI, so a cached build no longer crashes `ScanoramaMethod` with "Illegal instruction" on another CPU
 - `scIBAggregator` reads scIB metrics again: the W&B API now returns nested summary entries as dotted keys (`scib.BRAS`), so every run was dropped as missing metrics
 - `HarmonyMethod` takes `n_jobs` and `use_gpu`, defaulting to `torch.get_num_threads()` and to CUDA availability; harmony-pytorch's own default uses every physical core of the machine, which fails under Slurm (OMP error #34)
 - The `cpu` extra requires `setuptools<82`: louvain, via pyliger, imports `pkg_resources`; without it, importing torch after pyliger fails

@@ -95,6 +95,8 @@ envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
 envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 envs.docs.dependency-groups = [ "doc" ]
 envs.hatch-test.features = [ "cpu", "gpu" ]
+# Tests run on CPU; skip downloading CUDA torch.
+envs.hatch-test.env-vars = { UV_TORCH_BACKEND = "cpu" }
 envs.hatch-test.matrix = [
   # Test the lowest and highest supported Python versions with normal deps
   { deps = [ "stable" ], python = [ "3.12", "3.14" ] },
@@ -113,6 +115,9 @@ envs.hatch-test.dependency-groups = [ "dev", "test" ]
 # fixed on master (theislab/scarches#277), as is a torch indexing bug in
 # scPoli.get_latent (theislab/scarches#267). Drop once a release includes both.
 sources.scarches = { git = "https://github.com/theislab/scarches", rev = "d35cde61fff4dec6b86660817f4750fa35ff836d" }
+# annoy (via scanorama) has no Linux wheels, and its setup.py builds with -march=native: a cached build then crashes
+# with "Illegal instruction" on another CPU. These are its default flags without -march=native.
+extra-build-variables.annoy = { ANNOY_COMPILER_ARGS = "-D_CRT_SECURE_NO_WARNINGS,-fpermissive,-O3,-ffast-math,-fno-associative-math,-DANNOYLIB_MULTITHREADED_BUILD,-std=c++14" }
 
 [tool.ruff]
 line-length = 120
