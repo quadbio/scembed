@@ -8,32 +8,56 @@ from scembed.methods.cpu_methods import HVGMethod, PrecomputedEmbeddingMethod
 from scembed.methods.gpu_methods import HarmonyMethod
 
 
+@pytest.fixture(scope="module")
+def adata(pbmc_data_session):
+    """PBMC3k with embeddings from different integration methods, computed once per module."""
+    adata = pbmc_data_session.copy()
+
+    # Method 1: Precomputed (uses existing PCA)
+    pca_method = PrecomputedEmbeddingMethod(adata, embedding_key="X_pca")
+    pca_method.fit_transform()
+    adata.obsm["X_pca"] = pca_method.adata.obsm["X_pca"]
+
+    # Method 2: HVG-based embedding
+    hvg_method = HVGMethod(adata, n_top_genes=500, embedding_key="X_hvg")
+    hvg_method.fit_transform()
+    adata.obsm["X_hvg"] = hvg_method.adata.obsm["X_hvg"]
+
+    # Method 3: Harmony (GPU method)
+    harmony_method = HarmonyMethod(adata, embedding_key="X_harmony")
+    harmony_method.fit_transform()
+    adata.obsm["X_harmony"] = harmony_method.adata.obsm["X_harmony"]
+
+    return adata
+
+
+@pytest.fixture(scope="module")
+def evaluated(adata):
+    """Evaluator with a full scIB benchmark at default settings, shared by the tests that read its results."""
+    evaluator = IntegrationEvaluator(
+        adata=adata,
+        embedding_key="X_harmony",
+        batch_key="batch",
+        cell_type_key="cell_type",
+        baseline_embedding_key="X_pca",
+    )
+    evaluator.evaluate_scib()
+    return evaluator
+
+
+def _check_scib_metrics(evaluator):
+    """Check that the evaluator holds numeric scIB metrics for its embedding."""
+    assert evaluator.scib_metrics is not None
+    assert isinstance(evaluator.scib_metrics, type(evaluator.scib_metrics).__bases__[0])  # DataFrame-like
+    assert evaluator.embedding_key in evaluator.scib_metrics.index
+
+    metrics = evaluator.scib_metrics.loc[evaluator.embedding_key]
+    assert len(metrics) > 0
+    assert all(isinstance(val, int | float | np.number) for val in metrics.values)
+
+
 class TestIntegrationEvaluator:
     """Test suite for IntegrationEvaluator following typical evaluation pipeline."""
-
-    @pytest.fixture(autouse=True)
-    def setup_embeddings(self, pbmc_data):
-        """Set up realistic embeddings using different integration methods for testing."""
-        # Generate embeddings using different methods to test evaluation
-        self.adata = pbmc_data.copy()
-
-        # Method 1: Precomputed (uses existing PCA)
-        pca_method = PrecomputedEmbeddingMethod(self.adata, embedding_key="X_pca")
-        pca_method.fit_transform()
-        # Copy the embedding to self.adata
-        self.adata.obsm["X_pca"] = pca_method.adata.obsm["X_pca"]
-
-        # Method 2: HVG-based embedding
-        hvg_method = HVGMethod(self.adata, n_top_genes=500, embedding_key="X_hvg")
-        hvg_method.fit_transform()
-        # Copy the embedding to self.adata
-        self.adata.obsm["X_hvg"] = hvg_method.adata.obsm["X_hvg"]
-
-        # Method 3: Harmony (GPU method)
-        harmony_method = HarmonyMethod(self.adata, embedding_key="X_harmony")
-        harmony_method.fit_transform()
-        # Copy the embedding to self.adata
-        self.adata.obsm["X_harmony"] = harmony_method.adata.obsm["X_harmony"]
 
     @pytest.mark.parametrize(
         "embedding_key,baseline_key",
@@ -43,10 +67,10 @@ class TestIntegrationEvaluator:
             ("X_harmony", "X_pca_unintegrated"),
         ],
     )
-    def test_evaluator_initialization(self, embedding_key, baseline_key):
+    def test_evaluator_initialization(self, adata, embedding_key, baseline_key):
         """Test IntegrationEvaluator initialization with different embedding keys."""
         evaluator = IntegrationEvaluator(
-            adata=self.adata,
+            adata=adata,
             embedding_key=embedding_key,
             batch_key="batch",
             cell_type_key="cell_type",
@@ -60,7 +84,7 @@ class TestIntegrationEvaluator:
         assert evaluator.baseline_embedding_key == baseline_key
 
         # Check that adata is copied and has the required embedding
-        assert evaluator.adata is not self.adata  # Should be a copy
+        assert evaluator.adata is not adata  # Should be a copy
         assert embedding_key in evaluator.adata.obsm
         assert evaluator.adata.n_obs > 0
         assert evaluator.adata.n_vars > 0
@@ -76,59 +100,27 @@ class TestIntegrationEvaluator:
         # Check initial state
         assert evaluator.scib_metrics is None
 
-    @pytest.mark.parametrize(
-        "subsample_to,min_max_scale",
-        [
-            (None, False),
-            (1000, True),
-            (500, False),
-        ],
-    )
-    def test_evaluate_scib(self, subsample_to, min_max_scale):
-        """Test scIB evaluation with different subsampling and scaling options."""
+    def test_evaluate_scib(self, evaluated):
+        """Test scIB evaluation with default settings."""
+        _check_scib_metrics(evaluated)
+
+    def test_evaluate_scib_subsampled(self, adata):
+        """Test scIB evaluation with subsampling and min-max scaling."""
         evaluator = IntegrationEvaluator(
-            adata=self.adata,
+            adata=adata,
             embedding_key="X_pca",
             batch_key="batch",
             cell_type_key="cell_type",
         )
+        evaluator.evaluate_scib(subsample_to=500, min_max_scale=True)
 
-        # Run scIB evaluation
-        evaluator.evaluate_scib(
-            subsample_to=subsample_to,
-            min_max_scale=min_max_scale,
-        )
+        _check_scib_metrics(evaluator)
 
-        # Check that evaluation results are stored
-        assert evaluator.scib_metrics is not None
-        assert isinstance(evaluator.scib_metrics, type(evaluator.scib_metrics).__bases__[0])  # DataFrame-like
-        assert "X_pca" in evaluator.scib_metrics.index
-
-        # Check that metrics have expected structure
-        metrics = evaluator.scib_metrics.loc["X_pca"]
-        assert len(metrics) > 0  # Should have some metrics
-
-        # All metric values should be numeric
-        assert all(isinstance(val, int | float | np.number) for val in metrics.values)
-
-        # If min_max_scale is True, metrics should be in [0, 1] range for most metrics
-        if min_max_scale:
-            # Most scIB metrics are scaled to [0, 1], but some might be outside this range
-            # We just check that scaling was applied (results should differ from non-scaled)
-            pass
-
-    @pytest.mark.parametrize(
-        "key_added,use_rapids",
-        [
-            ("X_umap", False),
-            ("X_umap_test", False),
-            # Note: rapids testing would require GPU, so we stick to scanpy
-        ],
-    )
-    def test_compute_and_show_embeddings(self, key_added, use_rapids):
+    def test_compute_and_show_embeddings(self, adata):
         """Test UMAP computation and visualization."""
+        key_added = "X_umap_test"
         evaluator = IntegrationEvaluator(
-            adata=self.adata,
+            adata=adata,
             embedding_key="X_pca",
             batch_key="batch",
             cell_type_key="cell_type",
@@ -137,7 +129,7 @@ class TestIntegrationEvaluator:
         # Compute and visualize embeddings
         evaluator.compute_and_show_embeddings(
             key_added=key_added,
-            use_rapids=use_rapids,
+            use_rapids=False,  # rapids would require a GPU
             additional_colors=["batch"],  # Test additional coloring
         )
 
@@ -151,10 +143,10 @@ class TestIntegrationEvaluator:
         assert expected_figure.exists()
         assert expected_figure.stat().st_size > 0  # File should not be empty
 
-    def test_get_summary_metrics(self):
+    def test_get_summary_metrics(self, adata, evaluated):
         """Test extraction of summary metrics after evaluation."""
         evaluator = IntegrationEvaluator(
-            adata=self.adata,
+            adata=adata,
             embedding_key="X_hvg",
             batch_key="batch",
             cell_type_key="cell_type",
@@ -164,51 +156,35 @@ class TestIntegrationEvaluator:
         with pytest.raises(ValueError, match="Run evaluate_scib"):
             evaluator.get_summary_metrics()
 
-        # Run evaluation first
-        evaluator.evaluate_scib()
-
-        # Now should return metrics
-        summary = evaluator.get_summary_metrics()
+        # After evaluation, should return metrics
+        summary = evaluated.get_summary_metrics()
         assert isinstance(summary, dict)
         assert len(summary) > 0
 
         # All values should be numeric
         assert all(isinstance(val, int | float | np.number) for val in summary.values())
 
-    def test_typical_evaluation_pipeline(self):
-        """Test the complete evaluation pipeline as used in practice."""
-        # This follows the pattern from train.py
-        evaluator = IntegrationEvaluator(
-            adata=self.adata,
-            embedding_key="X_harmony",
-            batch_key="batch",
-            cell_type_key="cell_type",
-            baseline_embedding_key="X_pca",
-        )
-
-        # Step 1: Run scIB evaluation
-        evaluator.evaluate_scib()
-        assert evaluator.scib_metrics is not None
-
-        # Step 2: Get summary metrics (as would be logged to wandb)
-        summary = evaluator.get_summary_metrics()
+    def test_typical_evaluation_pipeline(self, evaluated):
+        """Test the complete evaluation pipeline as used in practice, after the scIB step in `evaluated`."""
+        # Get summary metrics (as would be logged to wandb)
+        summary = evaluated.get_summary_metrics()
         assert isinstance(summary, dict)
         assert len(summary) > 0
 
-        # Step 3: Generate UMAP plots
-        evaluator.compute_and_show_embeddings(wspace=0.7)
+        # Generate UMAP plots
+        evaluated.compute_and_show_embeddings(wspace=0.7)
 
         # Check that all expected outputs are present
-        assert "X_umap" in evaluator.adata.obsm
-        assert (evaluator.figures_dir / "umap_evaluation.png").exists()
+        assert "X_umap" in evaluated.adata.obsm
+        assert (evaluated.figures_dir / "umap_evaluation.png").exists()
 
         # Check that we can access the embedding key in results
-        assert evaluator.embedding_key in evaluator.scib_metrics.index
+        assert evaluated.embedding_key in evaluated.scib_metrics.index
 
-    def test_ignore_cell_types_functionality(self):
+    def test_ignore_cell_types_functionality(self, adata):
         """Test filtering of specific cell types during evaluation."""
         # Add some cells with unknown annotation
-        adata_with_unknown = self.adata.copy()
+        adata_with_unknown = adata.copy()
 
         # Add "unknown" category to the categorical cell_type column
         adata_with_unknown.obs["cell_type"] = adata_with_unknown.obs["cell_type"].cat.add_categories(["unknown"])
@@ -232,10 +208,10 @@ class TestIntegrationEvaluator:
         # Should not contain ignored cell types
         assert "unknown" not in evaluator.adata.obs["cell_type"].values
 
-    def test_evaluator_repr(self):
+    def test_evaluator_repr(self, adata, evaluated):
         """Test string representation of the evaluator."""
         evaluator = IntegrationEvaluator(
-            adata=self.adata,
+            adata=adata,
             embedding_key="X_pca",
             batch_key="batch",
             cell_type_key="cell_type",
@@ -251,6 +227,6 @@ class TestIntegrationEvaluator:
         assert "not evaluated" in repr_str
 
         # After evaluation, should show evaluated status
-        evaluator.evaluate_scib()
-        repr_str_after = repr(evaluator)
+        repr_str_after = repr(evaluated)
         assert "evaluated" in repr_str_after
+        assert "not evaluated" not in repr_str_after

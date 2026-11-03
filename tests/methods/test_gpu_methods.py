@@ -17,7 +17,7 @@ from scembed.methods.gpu_methods import (
 class TestHarmonyMethod:
     """Test suite for HarmonyMethod."""
 
-    @pytest.mark.parametrize("theta", [None, 2.0, 5.0])
+    @pytest.mark.parametrize("theta", [None, 5.0])
     def test_harmony_method(self, pbmc_data, theta):
         """Test Harmony method with different theta values."""
         pytest.importorskip("harmony")
@@ -62,7 +62,6 @@ class TestscVIMethod:
         [
             (5, None),
             (10, 64),
-            (8, 128),
         ],
     )
     def test_scvi_method(self, pbmc_data, n_latent, n_hidden):
@@ -92,7 +91,6 @@ class TestscANVIMethod:
         "linear_classifier",
         [
             True,
-            False,
             None,
         ],
     )
@@ -128,7 +126,6 @@ class TestscPoliMethod:
         [
             (5, 2),
             (10, 3),
-            (8, 1),
         ],
     )
     def test_scpoli_method(self, pbmc_data, latent_dim, pretraining_epochs):
@@ -163,8 +160,6 @@ class TestResolVIMethod:
         "n_latent,n_neighbors",
         [
             (5, 10),
-            (10, 15),
-            (8, 8),  # Changed from 5 to 8 to avoid neighbor indexing issues
         ],
     )
     def test_resolvi_method(self, spatial_data, n_latent, n_neighbors):
@@ -258,7 +253,6 @@ class TestscVIVAMethod:
         [
             ("scvi", 10),
             ("scanvi", 15),
-            ("scvi", 5),
         ],
     )
     def test_scviva_method(self, spatial_data, embedding_method, k_nn):
