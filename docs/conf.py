@@ -58,6 +58,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinxcontrib.bibtex",
     "sphinx_autodoc_typehints",
+    "scanpydoc.elegant_typehints",
     "sphinxcontrib.katex",
     "sphinx_design",
     "IPython.sphinxext.ipython_console_highlighting",
@@ -105,6 +106,16 @@ intersphinx_mapping = {
     "anndata": ("https://anndata.scverse.org/en/stable/", None),
     "scanpy": ("https://scanpy.scverse.org/en/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "scib-metrics": ("https://scib-metrics.readthedocs.io/en/stable/", None),
+}
+
+# Type hints resolve to private module paths; link their public names instead.
+qualname_overrides = {
+    "pandas.core.frame.DataFrame": "pandas.DataFrame",
+    "scib_metrics.benchmark._core.Benchmarker": "scib_metrics.benchmark.Benchmarker",
+    "scib_metrics.benchmark._core.BatchCorrection": "scib_metrics.benchmark.BatchCorrection",
+    "scib_metrics.benchmark._core.BioConservation": "scib_metrics.benchmark.BioConservation",
 }
 
 # extlinks config
