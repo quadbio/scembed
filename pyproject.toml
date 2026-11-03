@@ -75,6 +75,7 @@ doc = [
   "ipython",
   "myst-nb>=1.1",
   "pandas",
+  "scanpydoc",
   "scverse-misc[sphinx]>=0.1.2",
   "sphinx>=8.1",
   "sphinx-autodoc-typehints",
@@ -90,7 +91,7 @@ doc = [
 version.source = "vcs"
 envs.default.installer = "uv"
 envs.default.dependency-groups = [ "dev" ]
-envs.docs.scripts.build = "sphinx-build -M html docs docs/_build {args}"
+envs.docs.scripts.build = "sphinx-build -M html docs docs/_build -W {args}"
 envs.docs.scripts.clean = "git clean -fdX -- {args:docs}"
 envs.docs.scripts.open = "python -m webbrowser -t docs/_build/html/index.html"
 envs.docs.dependency-groups = [ "doc" ]
