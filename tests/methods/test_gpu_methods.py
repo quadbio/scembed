@@ -173,13 +173,13 @@ class TestResolVIMethod:
             spatial_key="spatial",
             n_latent=n_latent,
             n_neighbors=n_neighbors,
-            max_epochs=5,
+            max_epochs=2,
             downsample_counts=False,  # Disable to avoid tensor type issues in scvi-tools 1.3.3
         )
 
         assert method.n_latent == n_latent
         assert method.n_neighbors == n_neighbors
-        assert method.max_epochs == 5
+        assert method.max_epochs == 2
         assert not method.is_fitted
 
         method.fit_transform()

@@ -7,6 +7,9 @@ from scembed.evaluation import IntegrationEvaluator
 from scembed.methods.cpu_methods import HVGMethod, PrecomputedEmbeddingMethod
 from scembed.methods.gpu_methods import HarmonyMethod
 
+# One xdist worker runs this module, so the module-scoped fixtures, incl. a full scIB benchmark, are computed once
+pytestmark = pytest.mark.xdist_group("evaluation")
+
 
 @pytest.fixture(scope="module")
 def adata(pbmc_data_session):
@@ -116,33 +119,6 @@ class TestIntegrationEvaluator:
 
         _check_scib_metrics(evaluator)
 
-    def test_compute_and_show_embeddings(self, adata):
-        """Test UMAP computation and visualization."""
-        key_added = "X_umap_test"
-        evaluator = IntegrationEvaluator(
-            adata=adata,
-            embedding_key="X_pca",
-            batch_key="batch",
-            cell_type_key="cell_type",
-        )
-
-        # Compute and visualize embeddings
-        evaluator.compute_and_show_embeddings(
-            key_added=key_added,
-            use_rapids=False,  # rapids would require a GPU
-            additional_colors=["batch"],  # Test additional coloring
-        )
-
-        # Check that UMAP embedding was computed
-        assert key_added in evaluator.adata.obsm
-        assert evaluator.adata.obsm[key_added].shape[0] == evaluator.adata.n_obs
-        assert evaluator.adata.obsm[key_added].shape[1] == 2  # UMAP is 2D
-
-        # Check that the figure was saved
-        expected_figure = evaluator.figures_dir / "umap_evaluation.png"
-        assert expected_figure.exists()
-        assert expected_figure.stat().st_size > 0  # File should not be empty
-
     def test_get_summary_metrics(self, adata, evaluated):
         """Test extraction of summary metrics after evaluation."""
         evaluator = IntegrationEvaluator(
@@ -172,11 +148,13 @@ class TestIntegrationEvaluator:
         assert len(summary) > 0
 
         # Generate UMAP plots
-        evaluated.compute_and_show_embeddings(wspace=0.7)
+        evaluated.compute_and_show_embeddings(wspace=0.7, additional_colors=["batch"])
 
         # Check that all expected outputs are present
-        assert "X_umap" in evaluated.adata.obsm
-        assert (evaluated.figures_dir / "umap_evaluation.png").exists()
+        assert evaluated.adata.obsm["X_umap"].shape == (evaluated.adata.n_obs, 2)
+        figure = evaluated.figures_dir / "umap_evaluation.png"
+        assert figure.exists()
+        assert figure.stat().st_size > 0
 
         # Check that we can access the embedding key in results
         assert evaluated.embedding_key in evaluated.scib_metrics.index

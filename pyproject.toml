@@ -110,6 +110,10 @@ envs.hatch-test.matrix = [
 envs.hatch-test.overrides.matrix.deps.env-vars = [
   { value = "allow", key = "UV_PRERELEASE", if = [ "pre" ] },
 ]
+# The live W&B tests check the W&B API, which doesn't depend on Python: run them on the lowest version only
+envs.hatch-test.overrides.matrix.python.env-vars = [
+  { value = "-m 'not wandb'", key = "PYTEST_ADDOPTS", if = [ "3.14" ] },
+]
 envs.hatch-test.dependency-groups = [ "dev", "test" ]
 
 [tool.uv]
@@ -163,7 +167,10 @@ lint.pydocstyle.convention = "numpy"
 addopts = [
   "--import-mode=importlib", # allow using test files with same name
 ]
-markers = [ "slow: trains several models and logs them to W&B" ]
+markers = [
+  "wandb: uses the live W&B API",
+  "xdist_group: tests that share one pytest-xdist worker under --dist loadgroup; registered for runs without xdist",
+]
 strict = true
 testpaths = [ "tests" ]
 
