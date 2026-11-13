@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning][].
 
 - `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI's port to current scvi-tools from [quadbio/simvi](https://github.com/quadbio/simvi)
 - `scIBAggregator.fetch_runs` takes `filters`, a W&B query that selects runs on the server, e.g. by method
+- `scVIVAMethod` takes `slice_key`, like `ResolVIMethod` and `SIMVIMethod`, for sections that differ from batches; neighborhoods are computed per section, and per batch if it is None
 
 ### Fixed
 
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning][].
 - `ResolVIMethod` and `scVIVAMethod` use ResolVI and scVIVA from scviva-tools, where they now live, instead of scvi-tools' unmaintained copies; `scviva-tools` joins the `gpu` extra
 - Require `pandas<3`: scib-metrics' `Benchmarker.get_results`, used by `IntegrationEvaluator` and `scIBAggregator`, and scarches' scPoli fail on pandas 3
 - Install `scarches` from master in development and CI, for anndata 0.13 and a scPoli latent-space bug; PyPI installs keep the latest release
+- Exclude `umap-learn` 0.6.0, which breaks `IntegrationEvaluator.evaluate_scib`: it rejects the non-contiguous kNN arrays scib-metrics passes to `fuzzy_simplicial_set`
 - Build `annoy` (via scanorama) without `-march=native` in development and CI, so a cached build no longer crashes `ScanoramaMethod` with "Illegal instruction" on another CPU
 - `scIBAggregator` reads scIB metrics again: the W&B API now returns nested summary entries as dotted keys (`scib.BRAS`), so every run was dropped as missing metrics
 - `HarmonyMethod` takes `n_jobs` and `use_gpu`, defaulting to `torch.get_num_threads()` and to CUDA availability; harmony-pytorch's own default uses every physical core of the machine, which fails under Slurm (OMP error #34)
