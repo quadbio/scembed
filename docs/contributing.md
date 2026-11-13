@@ -233,10 +233,12 @@ in the root of the repository.
 
 ### Continuous integration
 
-Continuous integration via GitHub actions will automatically run the tests on all pull requests and test
-against the minimum and maximum supported Python version.
+Continuous integration via GitHub actions will automatically run the tests on all pull requests that change more
+than docs, Markdown or the pre-commit config, and test against the minimum and maximum supported Python version.
+The tests that use the live W&B API (marked `wandb`) run on the minimum version only.
 
-Additionally, there’s a CI job that tests against pre-releases of all dependencies (if there are any).
+Additionally, a CI job tests against pre-releases of all dependencies (if there are any).
+It runs on the schedule in `.github/workflows/test.yaml`, or when you start the workflow by hand.
 The purpose of this check is to detect incompatibilities of new package versions early on and
 gives you time to fix the issue or reach out to the developers of the dependency before the package
 is released to a wider audience.
