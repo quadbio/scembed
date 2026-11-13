@@ -249,15 +249,19 @@ class TestscVIVAMethod:
     """Test suite for scVIVAMethod (spatial method)."""
 
     @pytest.mark.parametrize(
-        "embedding_method,k_nn",
+        "embedding_method,k_nn,slice_key",
         [
-            ("scvi", 10),
-            ("scanvi", 15),
+            ("scvi", 10, None),
+            ("scanvi", 15, "slice"),
         ],
     )
-    def test_scviva_method(self, spatial_data, embedding_method, k_nn):
-        """Test scVIVA method with different embedding methods and neighbor counts."""
+    def test_scviva_method(self, spatial_data, embedding_method, k_nn, slice_key):
+        """Test scVIVA method with different embedding methods, neighbor counts and slice keys."""
         pytest.importorskip("scviva")
+
+        # Two slices per batch, so neighborhoods per slice differ from neighborhoods per batch
+        halves = np.where(np.arange(spatial_data.n_obs) % 2, "a", "b")
+        spatial_data.obs["slice"] = (spatial_data.obs["batch"].astype(str) + "_" + halves).astype("category")
 
         method = scVIVAMethod(
             spatial_data,
@@ -266,6 +270,7 @@ class TestscVIVAMethod:
             spatial_key="spatial",
             embedding_method=embedding_method,
             k_nn=k_nn,
+            slice_key=slice_key,
             max_epochs=5,
             scvi_params={"max_epochs": 5},
             scanvi_params={"max_epochs": 5},
@@ -273,10 +278,16 @@ class TestscVIVAMethod:
 
         assert method.embedding_method == embedding_method
         assert method.k_nn == k_nn
+        assert method.slice_key == slice_key
         assert method.max_epochs == 5
         assert not method.is_fitted
 
         method.fit_transform()
+
+        # Every cell's spatial neighbors lie in its own slice, or its batch if no slice_key is given
+        prepared = method.setup_state["adata_prepared"]
+        sections = prepared.obs[slice_key or "batch"].to_numpy()
+        assert (sections[prepared.obsm["niche_indexes"]] == sections[:, None]).all()
 
         assert method.is_fitted
         assert method.embedding_key in method.adata.obsm

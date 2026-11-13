@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning][].
 
 - `SIMVIMethod`, a wrapper for SIMVI's intrinsic latent; needs SIMVI's port to current scvi-tools from [quadbio/simvi](https://github.com/quadbio/simvi)
 - `scIBAggregator.fetch_runs` takes `filters`, a W&B query that selects runs on the server, e.g. by method
+- `scVIVAMethod` takes `slice_key`, like `ResolVIMethod` and `SIMVIMethod`, for sections that differ from batches; neighborhoods are computed per section, and per batch if it is None
 
 ### Fixed
 
