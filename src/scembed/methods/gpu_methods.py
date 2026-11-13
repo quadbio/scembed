@@ -1180,6 +1180,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         batch_size: int | None = None,
         gene_likelihood: str | None = None,
         check_val_every_n_epoch: int | None = None,
+        slice_key: str | None = None,
         **kwargs,
     ):
         """
@@ -1225,6 +1226,8 @@ class scVIVAMethod(BaseIntegrationMethod):
             Likelihood, nb, zinb or poisson, see scvi docs.
         check_val_every_n_epoch
             Check validation loss every n epochs.
+        slice_key
+            Key in adata.obs for sections; neighborhoods are computed per section. If None, uses `batch_key`.
         """
         super().__init__(
             adata,
@@ -1244,6 +1247,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             batch_size=batch_size,
             gene_likelihood=gene_likelihood,
             check_val_every_n_epoch=check_val_every_n_epoch,
+            slice_key=slice_key,
             **kwargs,
         )
 
@@ -1264,6 +1268,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         self.batch_size = batch_size
         self.gene_likelihood = gene_likelihood
         self.check_val_every_n_epoch = check_val_every_n_epoch
+        self.slice_key = slice_key
 
         # Initialize models
         self.embedding_model = None
@@ -1283,7 +1288,7 @@ class scVIVAMethod(BaseIntegrationMethod):
         # Prepare preprocessing parameters, filtering out None values for k_nn only
         preprocessing_params = {
             "adata": adata_prepared,
-            "sample_key": self.batch_key,
+            "sample_key": self.slice_key or self.batch_key,
             "labels_key": self.cell_type_key,
             "cell_coordinates_key": self.spatial_key,
             "expression_embedding_key": expression_embedding_key,
@@ -1371,7 +1376,7 @@ class scVIVAMethod(BaseIntegrationMethod):
             adata_hvg,
             layer=self._scvi_layer,
             batch_key=self.batch_key,
-            sample_key=self.batch_key,
+            sample_key=self.slice_key or self.batch_key,
             labels_key=self.cell_type_key,
             cell_coordinates_key=self.spatial_key,
             expression_embedding_key=expression_embedding_key,
