@@ -167,10 +167,7 @@ lint.pydocstyle.convention = "numpy"
 addopts = [
   "--import-mode=importlib", # allow using test files with same name
 ]
-markers = [
-  "wandb: uses the live W&B API",
-  "xdist_group: tests that share one pytest-xdist worker under --dist loadgroup; registered for runs without xdist",
-]
+markers = [ "wandb: uses the live W&B API" ]
 strict = true
 testpaths = [ "tests" ]
 

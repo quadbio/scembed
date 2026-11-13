@@ -7,9 +7,6 @@ from scembed.evaluation import IntegrationEvaluator
 from scembed.methods.cpu_methods import HVGMethod, PrecomputedEmbeddingMethod
 from scembed.methods.gpu_methods import HarmonyMethod
 
-# One xdist worker runs this module, so the module-scoped fixtures, incl. a full scIB benchmark, are computed once
-pytestmark = pytest.mark.xdist_group("evaluation")
-
 
 @pytest.fixture(scope="module")
 def adata(pbmc_data_session):
