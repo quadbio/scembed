@@ -24,7 +24,7 @@ class TestRetrieval:
     is consistent with the original stored embeddings.
     """
 
-    @pytest.mark.slow
+    @pytest.mark.wandb
     @pytest.mark.parametrize(
         "method_config",
         [

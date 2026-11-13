@@ -3,10 +3,16 @@ name: Test
 on:
   push:
     branches: [main]
+    # Changes that can't affect the tests; Read the Docs builds the docs
+    paths-ignore:
+      ["docs/**", "**.md", ".pre-commit-config.yaml", ".readthedocs.yaml"]
   pull_request:
     branches: [main]
+    paths-ignore:
+      ["docs/**", "**.md", ".pre-commit-config.yaml", ".readthedocs.yaml"]
   schedule:
     - cron: "0 5 1,15 * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,10 +41,14 @@ jobs:
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: Get test environments
         id: get-envs
+        env:
+          # Pre-release environments run only on the schedule or on demand
+          WITH_PRE: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         run: |
-          ENVS_JSON=$(uvx hatch env show --json | jq -c 'to_entries
+          ENVS_JSON=$(uvx hatch env show --json | jq -c --argjson with_pre "$WITH_PRE" 'to_entries
             | map(
                 select(.key | startswith("hatch-test"))
+                | select($with_pre or (.key | contains("pre") | not))
                 | {
                     name: .key,
                     label: (if (.key | contains("pre")) then .key + " (PRE-RELEASE DEPENDENCIES)" else .key end),
@@ -74,6 +84,8 @@ jobs:
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: ${{ matrix.env.python }}
+          # PR caches would evict main's under the repo's cache limit; PRs restore main's instead
+          save-cache: ${{ github.ref == 'refs/heads/main' }}
       - name: create hatch environment
         run: uvx hatch env create ${{ matrix.env.name }}
       - name: list all all installed package versions
@@ -84,7 +96,7 @@ jobs:
           PLATFORM: ${{ matrix.os }}
           DISPLAY: :42
           WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-        run: uvx hatch run ${{ matrix.env.name }}:run-cov -v --color=yes -n auto
+        run: uvx hatch run ${{ matrix.env.name }}:run-cov -v --color=yes -n auto --dist loadscope
       - name: generate coverage report
         run: |
           # See https://coverage.readthedocs.io/page/config.html#run-patch

@@ -6,6 +6,7 @@ import pytest
 from scembed.aggregation import scIBAggregator
 
 
+@pytest.mark.wandb
 class TestscIBAggregator:
     """Test suite for scIBAggregator following typical usage pipeline."""
 
