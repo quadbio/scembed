@@ -12,6 +12,7 @@ through [scIB metrics][], and aggregates W&B sweep results produced via
 ## Trust Order
 
 When sources disagree:
+
 1. PR description and changed code
 2. This file (`AGENTS.md`)
 3. `REVIEW_GUIDE.md`

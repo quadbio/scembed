@@ -8,7 +8,6 @@
 [![Downloads][badge-downloads]][downloads]
 [![Zenodo][badge-zenodo]][zenodo]
 
-
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/quadbio/scembed/test.yaml?branch=main
 [badge-docs]: https://img.shields.io/readthedocs/scembed
 [badge-coverage]: https://codecov.io/gh/quadbio/scembed/branch/main/graph/badge.svg
@@ -17,7 +16,6 @@
 [badge-downloads]: https://static.pepy.tech/badge/scembed
 [badge-zenodo]: https://zenodo.org/badge/1046168919.svg
 
-
 Single-cell RNA-sequencing (scRNA-seq) 🧪 measures gene expression in individual cells and generates large datasets. Typically, these datasets consist of several samples, each corresponding to a combination of covariates (e.g. patient, time point, disease status, technology, etc.). Analyzing these vast datasets (often containing millions of cells for thousands of genes) is facilitated by data integration approaches, which learn lower-dimensional representations that remove the effects of certain unwanted covariates (such as experimental batch, the chip the data was run on, etc).
 
 ## 🎯 Overview
@@ -25,7 +23,6 @@ Single-cell RNA-sequencing (scRNA-seq) 🧪 measures gene expression in individu
 Here, we use `slurm_sweep` to efficiently parallelize and track different data integration approaches, and we compare their performance in terms of [scIB metrics](https://scib-metrics.readthedocs.io/en/stable/) ([Luecken et al., 2022](https://doi.org/10.1038/s41592-021-01336-8)). For each data integration method, we compute a shared latent space, quantify integration performance in terms of batch correction and bio conservation, visualize the latent space with UMAP, store the model and embedding coordinates, and store all relevant data on wandb, so that we can retrieve it after the sweep.
 
 `scembed` consists of shallow wrappers around commonly used integration tools, a class to facilitate scIB comparisons, and another class to retrieve and aggregate sweep results.
-
 
 ## 🚀 Getting started
 
@@ -62,6 +59,7 @@ The package uses optional dependency groups to minimize installation overhead:
 - **`[all]`**: All optional dependencies
 
 **⚠️ Notes**:
+
 - For GPU-accelerated FAISS, install `faiss-gpu` via conda ([installation guide](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md)).
 - If you encounter C++ compilation errors (e.g., with `louvain` or `annoy`), install those packages via conda first.
 
