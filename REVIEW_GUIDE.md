@@ -62,12 +62,14 @@ that uses the modified fixture.
 Apply these checks whenever the PR touches code or tests.
 
 **New code.** Confirm that new behavior is covered by tests.
+
 - Reuse fixtures from `tests/conftest.py` rather than creating parallel ones.
 - Prefer `pytest.mark.parametrize` over many near-identical tests.
 - Favor few meaningful tests over many redundant ones; flag low-value tests
   that only duplicate existing coverage.
 
 **Failing tests.** If CI is red, do not wave it through.
+
 - Inspect which tests fail and why (`gh pr checks`, `gh run view --log-failed`).
 - Distinguish critical regressions (method outputs, optional-dep gating,
   W&B parsing) from trivial or flaky failures.
@@ -75,6 +77,7 @@ Apply these checks whenever the PR touches code or tests.
   merge.
 
 **Modified tests.** Scrutinize _how_ existing tests were changed.
+
 - PRs that only relax thresholds, remove assertions, delete cases, or loosen
   `parametrize` matrices are a red flag — tests-working-around-tests defeats
   the purpose.
@@ -89,6 +92,7 @@ the **owning file** for each topic rather than duplicating content in your
 review.
 
 **Human-facing docs (`docs/`, Sphinx/RTD).**
+
 - API signature or public symbol changes → `docs/api.md` and autosummary
   entries; any prose referencing the symbol.
 - Contributor workflow, environment, or CI changes → `docs/contributing.md`.
@@ -96,6 +100,7 @@ review.
   `docs/notebooks/basic_usage.ipynb`.
 
 **Agent-facing docs (repo root and `.github/`).**
+
 - Invariants or development commands changed → `AGENTS.md` (Critical
   Invariants, Development Commands).
 - Review workflow, risk areas, or testing conventions changed →
@@ -129,6 +134,7 @@ This repo uses a structured PR template.
 
 Reviewers and agents should treat these sections as the preferred summary
 surface:
+
 - summary
 - behavior or invariants changed
 - tests run
